@@ -1,0 +1,85 @@
+@prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:working_parent_or_parental_responsibility_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The applicant must be a parent or person exercising parental responsibility for a child." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasChild ?child .
+                }
+            }
+        """ ;
+    ] .
+
+ex:child_age_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The applicant must have at least one child who is under eight years of age." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasChild ?child .
+                    ?child :birthDate ?birthDate .
+                    FILTER ((YEAR(now()) - YEAR(?birthDate)) < 8)
+                }
+            }
+        """ ;
+    ] .
+
+ex:eligible_employment_relationship_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The applicant must have an active employment relationship in the private or public sector." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasEmployment ?employment .
+                    ?employment :isActive ?activeStatus .
+                    ?employment :employmentSector ?sector .
+                    FILTER (?activeStatus = true)
+                    FILTER (?sector = "Private" || ?sector = "Public")
+                }
+            }
+        """ ;
+    ] .
+
+ex:one_year_same_employer_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "An active employment relationship must have lasted at least twelve months from the recorded employment start date." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            SELECT ?this
+            WHERE {
+                ?this :hasEmployment ?employment .
+                ?employment :isActive ?activeStatus .
+                ?employment :employmentStartDate ?startDate .
+                FILTER (?activeStatus = true)
+                FILTER (
+                    ((YEAR(now()) * 12 + MONTH(now())) -
+                     (YEAR(?startDate) * 12 + MONTH(?startDate))) < 12
+                )
+            }
+        """ ;
+    ] .

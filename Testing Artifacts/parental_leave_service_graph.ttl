@@ -1,0 +1,43 @@
+@prefix ex: <http://example.org/> .
+    @prefix cccev: <http://data.europa.eu/m8g/> .
+    @prefix cpsv: <http://purl.org/vocab/cpsv#> .
+    @prefix dct: <http://purl.org/dc/terms/> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+    ex:parental_leave a cpsv:PublicService .
+
+ex:parental_leave cpsv:holdsRequirement ex:working_parent_or_parental_responsibility_condition .
+ex:working_parent_or_parental_responsibility_condition a cccev:Constraint ; dct:description "The applicant must be a working parent or a person exercising parental responsibility, including a biological, adoptive or foster parent, or a presumed mother under Article 1464 of the Civil Code who has a child through surrogacy." .
+ex:working_parent_or_parental_responsibility_condition cccev:constrains ex:child .
+ex:child a cccev:InformationConcept .
+ex:working_parent_or_parental_responsibility_condition cccev:constrains ex:active_employment_status .
+ex:active_employment_status a cccev:InformationConcept .
+
+ex:parental_leave cpsv:holdsRequirement ex:child_age_condition .
+ex:child_age_condition a cccev:Constraint ; dct:description "The child must be under eight (8) years of age." .
+ex:child_age_condition cccev:constrains ex:child_birth_date .
+ex:child_birth_date a cccev:InformationConcept .
+
+ex:parental_leave cpsv:holdsRequirement ex:eligible_employment_relationship_condition .
+ex:eligible_employment_relationship_condition a cccev:Constraint ; dct:description "The applicant must be employed either under a dependent-employment relationship or under a paid mandate, in the private or public sector. In the public sector, the subsidy is available only to employees covered by labour legislation." .
+ex:eligible_employment_relationship_condition cccev:constrains ex:employment_sector .
+ex:employment_sector a cccev:InformationConcept .
+ex:eligible_employment_relationship_condition cccev:constrains ex:active_employment_status .
+ex:active_employment_status a cccev:InformationConcept .
+
+ex:parental_leave cpsv:holdsRequirement ex:one_year_same_employer_condition .
+ex:one_year_same_employer_condition a cccev:Constraint ; dct:description "The applicant must have completed one (1) year of employment with the same employer, whether continuously or through successive fixed-term employment contracts, unless more favourable terms are provided by specific legislation, decrees, regulations, collective labour agreements, arbitration awards, or oral or written employer–employee agreements." .
+ex:one_year_same_employer_condition cccev:constrains ex:employment_start_date .
+ex:employment_start_date a cccev:InformationConcept .
+ex:one_year_same_employer_condition cccev:constrains ex:active_employment_status .
+ex:active_employment_status a cccev:InformationConcept .
+
+ex:parental_leave cpsv:holdsRequirement ex:ergani_parental_leave_form_upload_condition .
+ex:ergani_parental_leave_form_upload_condition a cccev:Constraint ; dct:description "The employer must upload the parental-leave grant form (Form E.14) to the ERGANI Information System." .
+
+ex:parental_leave cpsv:holdsRequirement ex:taxisnet_credentials_and_aade_certification_condition .
+ex:taxisnet_credentials_and_aade_certification_condition a cccev:Constraint ; dct:description "For online submission, the applicant must hold TAXISnet credentials to access DYPA electronic services through certification by the Independent Authority for Public Revenue (AADE)." .
+
+ex:parental_leave cpsv:holdsRequirement ex:dypa_registration_condition .
+ex:dypa_registration_condition a cccev:Constraint ; dct:description "The applicant must be registered in DYPA’s Register of Natural Persons and hold a DYPA Registration Number; where not already registered, registration is completed electronically using TAXISnet credentials, following verification by AADE." .
+

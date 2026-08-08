@@ -1,0 +1,179 @@
+@prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:citizenship_condition_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:property [
+        sh:path :citizenshipCountry ;
+        sh:minCount 1 ;
+        sh:in (
+            "AT" "BE" "BG" "HR" "CY" "CZ" "DK" "EE" "FI" "FR"
+            "DE" "GR" "HU" "IE" "IT" "LV" "LT" "LU" "MT" "NL"
+            "PL" "PT" "RO" "SK" "SI" "ES" "SE"
+        ) ;
+        sh:message "Applicant must be a Greek citizen or a citizen of an EU Member State." ;
+    ] .
+
+ex:regular_unemployment_benefit_exhaustion_condition_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Applicant has not exhausted the 12-month regular unemployment benefit entitlement." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+
+            SELECT ?this
+            WHERE {
+                ?this a :Applicant .
+
+                FILTER NOT EXISTS {
+                    ?this :hasRegularBenefitRecord ?record .
+                    ?record :regularBenefitMonthsPaid ?monthsPaid .
+                    FILTER (?monthsPaid >= 12)
+                }
+            }
+        """ ;
+    ] .
+
+ex:continuous_unemployment_registration_condition_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Applicant has not remained continuously registered as unemployed for at least 12 months." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+
+            SELECT ?this
+            WHERE {
+                ?this a :Applicant .
+
+                FILTER NOT EXISTS {
+                    ?this :hasUnemploymentRegistration ?registration .
+                    ?registration :registrationStartDate ?startDate ;
+                                  :isCurrentlyRegistered true .
+
+                    BIND(
+                        ((YEAR(now()) * 12 + MONTH(now())) -
+                         (YEAR(?startDate) * 12 + MONTH(?startDate)))
+                        AS ?elapsedMonths
+                    )
+
+                    FILTER (?elapsedMonths >= 12)
+                }
+            }
+        """ ;
+    ] .
+
+ex:age_at_application_condition_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Applicant is not between 20 and 66 years old at the time of application." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+
+            SELECT ?this
+            WHERE {
+                ?this a :Applicant .
+
+                FILTER NOT EXISTS {
+                    ?this :birthDate ?birthDate .
+
+                    BIND((YEAR(now()) - YEAR(?birthDate)) AS ?age)
+
+                    FILTER (?age >= 20 && ?age <= 66)
+                }
+            }
+        """ ;
+    ] .
+
+ex:annual_family_income_threshold_condition_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Annual family income exceeds the permitted threshold of EUR 10,000 plus EUR 586.08 for each dependent child under 18." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+
+            SELECT ?this
+            WHERE {
+                {
+                    SELECT ?this (COUNT(DISTINCT ?dependentChild) AS ?dependentChildCount)
+                    WHERE {
+                        ?this a :Applicant .
+
+                        OPTIONAL {
+                            ?this :hasChild ?dependentChild .
+                            ?dependentChild :birthDate ?childBirthDate .
+
+                            BIND(
+                                (YEAR(now()) - YEAR(?childBirthDate))
+                                AS ?childAge
+                            )
+
+                            FILTER (?childAge < 18)
+                        }
+                    }
+                    GROUP BY ?this
+                }
+
+                {
+                    SELECT ?this (SUM(?incomeAmount) AS ?totalFamilyIncome)
+                    WHERE {
+                        SELECT DISTINCT ?this ?incomeRecord ?incomeAmount
+                        WHERE {
+                            {
+                                ?this :hasIncome ?incomeRecord .
+                                ?incomeRecord :amount ?incomeAmount ;
+                                              :incomeYear ?incomeYear .
+                                FILTER (STR(?incomeYear) = STR(YEAR(now()) - 2))
+                            }
+                            UNION
+                            {
+                                ?this :hasSpouse ?spouse .
+                                ?spouse :hasIncome ?incomeRecord .
+                                ?incomeRecord :amount ?incomeAmount ;
+                                              :incomeYear ?incomeYear .
+                                FILTER (STR(?incomeYear) = STR(YEAR(now()) - 2))
+                            }
+                            UNION
+                            {
+                                ?this :hasChild ?minorChild .
+                                ?minorChild :birthDate ?childBirthDate ;
+                                            :hasIncome ?incomeRecord .
+                                ?incomeRecord :amount ?incomeAmount ;
+                                              :incomeYear ?incomeYear .
+
+                                BIND(
+                                    (YEAR(now()) - YEAR(?childBirthDate))
+                                    AS ?childAge
+                                )
+
+                                FILTER (
+                                    ?childAge < 18 &&
+                                    STR(?incomeYear) = STR(YEAR(now()) - 2)
+                                )
+                            }
+                        }
+                    }
+                    GROUP BY ?this
+                }
+
+                BIND(
+                    (10000 + (586.08 * ?dependentChildCount))
+                    AS ?incomeThreshold
+                )
+
+                FILTER (?totalFamilyIncome > ?incomeThreshold)
+            }
+        """ ;
+    ] .

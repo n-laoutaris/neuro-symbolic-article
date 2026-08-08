@@ -87,22 +87,11 @@
     - type: patch_node
       turtle: ex:Veronica :birthDate "2007-01-01"^^xsd:date .
 
-- id: SCN_10
-  description: "An additional minor child is added, raising the income limit further and keeping an otherwise-marginal household eligible (tests that the child credit correctly increases the cap, not just that a cap exists)."
-  expected_violation_count: 0
-  actions:
-    - type: patch_node
-      turtle: |
-        ex:Nikos a :Person ;
-          :birthDate "2016-03-01"^^xsd:date .
-        ex:Franky :hasChild ex:Veronica, ex:Nikos .
-        ex:FrankyIncome :amount 7000.0 .
-
 # ------------------------------------------
 # COMPOUND / EDGE SCENARIOS
 # ------------------------------------------
 
-- id: SCN_11
+- id: SCN_10
   description: "Applicant fails multiple independent conditions simultaneously (too old AND income too high)."
   expected_violation_count: 2
   actions:

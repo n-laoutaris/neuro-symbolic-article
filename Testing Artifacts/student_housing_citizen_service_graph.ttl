@@ -1,0 +1,230 @@
+@prefix cccev: <http://data.europa.eu/m8g/> .
+@prefix cpsv: <http://purl.org/vocab/cpsv#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/> .
+@prefix ns1: <http://example.org/schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:student_housing a cpsv:PublicService ;
+    cpsv:holdsRequirement ex:cohabitation_lease_tenant_afm_condition,
+        ex:cohabitation_same_study_location_condition,
+        ex:cohabitation_tenant_afm_or_dependency_condition,
+        ex:cohabiting_student_degree_and_duration_condition,
+        ex:cohabiting_student_eligibility_condition,
+        ex:course_completion_condition,
+        ex:exceptional_student_beneficiary_condition,
+        ex:family_income_threshold_condition,
+        ex:minimum_lease_duration_condition,
+        ex:nationality_condition,
+        ex:parent_beneficiary_afm_condition,
+        ex:parent_tax_return_filing_condition,
+        ex:rented_study_residence_condition,
+        ex:residential_property_area_limit_condition,
+        ex:taxisnet_credentials_condition,
+        ex:valid_academic_identity_card_condition .
+
+ex:FamilyHome a ns1:Residence ;
+    ns1:locatedIn ex:Thessaloniki ;
+    ns1:residenceType "Owned" .
+
+ex:academic_identity_card_validity a cccev:InformationConcept ;
+    ex:mapsTo ex:KaterinaEduRecord .
+
+ex:aggregated_family_annual_income a cccev:InformationConcept ;
+    ex:mapsTo ex:DadIncome,
+        ex:KaterinaIncome,
+        ex:MomIncome .
+
+ex:aggregated_residential_property_area a cccev:InformationConcept ;
+    ex:mapsTo ex:DadMainProperty,
+        ex:MomVillageHouse .
+
+ex:citizenship_country a cccev:InformationConcept ;
+    ex:mapsTo ex:Katerina .
+
+ex:cohabitation_lease_tenant_afm_condition a cccev:Constraint ;
+    dct:description "For the cohabitation-based allowance, the lease submitted with the application must list as tenant the AFM declared for the cohabiting student." .
+
+ex:cohabitation_same_study_location_condition a cccev:Constraint ;
+    dct:description "For the cohabitation-based allowance, the student and the cohabiting student must study in the same city or regional unit." .
+
+ex:cohabitation_tenant_afm_or_dependency_condition a cccev:Constraint ;
+    dct:description "For the cohabitation-based allowance, the AFM declared as tenant on behalf of the other student must match the cohabiting student’s AFM, or the cohabiting student must include the student as a dependent child in their tax return." .
+
+ex:cohabiting_student_degree_and_duration_condition a cccev:Constraint ;
+    dct:description "The cohabiting student must not hold another higher-education degree and must not have exceeded the maximum study-period limit in semesters provided by the Study Regulations." .
+
+ex:cohabiting_student_eligibility_condition a cccev:Constraint ;
+    dct:description "For the cohabitation-based allowance, the cohabiting person must be an undergraduate student at a higher education institution pursuing their first degree and must not have exceeded the study duration, in semesters, required by the curriculum to obtain that degree." .
+
+ex:course_completion_condition a cccev:Constraint ;
+    cccev:constrains ex:passed_courses_count,
+        ex:total_courses_count ;
+    dct:description "The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested." .
+
+ex:current_residence_city a cccev:InformationConcept ;
+    ex:mapsTo ex:Athens .
+
+ex:current_residence_type a cccev:InformationConcept ;
+    ex:mapsTo ex:StudentApartment .
+
+ex:dependent_children a cccev:InformationConcept ;
+    ex:mapsTo ex:Fonis,
+        ex:Katerina .
+
+ex:exceptional_student_beneficiary_condition a cccev:Constraint ;
+    cccev:constrains ex:student_birth_date,
+        ex:student_dependency_status ;
+    dct:description "The student may exceptionally be the beneficiary if they are orphaned by both parents; have parents residing abroad; are over 25 years old; or are required to file an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In this case, the student declares only their spouse’s AFM, if applicable." .
+
+ex:family_income_threshold_condition a cccev:Constraint ;
+    cccev:constrains ex:aggregated_family_annual_income,
+        ex:dependent_children,
+        ex:income_record_year ;
+    dct:description "The family’s annual income for the preceding year must not exceed €30,000, increased by €3,000 for each dependent child beyond the first." .
+
+ex:income_record_year a cccev:InformationConcept ;
+    ex:mapsTo ex:DadIncome,
+        ex:KaterinaIncome,
+        ex:MomIncome .
+
+ex:lease_start_date a cccev:InformationConcept ;
+    ex:mapsTo ex:StudentApartment .
+
+ex:minimum_lease_duration_condition a cccev:Constraint ;
+    cccev:constrains ex:lease_start_date ;
+    dct:description "The lease must be valid for at least six months." .
+
+ex:nationality_condition a cccev:Constraint ;
+    cccev:constrains ex:citizenship_country ;
+    dct:description "The student must be a Greek national or a national of another European Union Member State." .
+
+ex:parent_beneficiary_afm_condition a cccev:Constraint ;
+    dct:description "Where the parent is the beneficiary, the application must state the taxpayer identification number (AFM) of the student and of the parent on whom the student is dependent. For divorced or separated parents, the beneficiary is the parent on whom the student is dependent." .
+
+ex:parent_tax_return_filing_condition a cccev:Constraint ;
+    dct:description "The relevant parent must have filed an income tax return for the year in which the housing-allowance application is submitted." .
+
+ex:passed_courses_count a cccev:InformationConcept ;
+    ex:mapsTo ex:KaterinaEduRecord .
+
+ex:principal_residence_city a cccev:InformationConcept ;
+    ex:mapsTo ex:Thessaloniki .
+
+ex:property_municipality a cccev:InformationConcept ;
+    ex:mapsTo ex:Thessaloniki,
+        ex:TinyVillage .
+
+ex:property_municipality_population a cccev:InformationConcept ;
+    ex:mapsTo ex:Thessaloniki,
+        ex:TinyVillage .
+
+ex:rented_study_residence_condition a cccev:Constraint ;
+    cccev:constrains ex:current_residence_city,
+        ex:current_residence_type,
+        ex:principal_residence_city,
+        ex:student_or_parent_owned_property_city,
+        ex:study_city ;
+    dct:description "The student must reside, for study purposes, in rented accommodation in a city other than their principal residence. Neither the student nor their parents may hold full ownership or usufruct rights over a residence in that city." .
+
+ex:residential_property_area_limit_condition a cccev:Constraint ;
+    cccev:constrains ex:aggregated_residential_property_area,
+        ex:property_municipality,
+        ex:property_municipality_population ;
+    dct:description "The student’s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented residences exceeding a total of 200 sq. m.; residences or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation." .
+
+ex:student_birth_date a cccev:InformationConcept ;
+    ex:mapsTo ex:Katerina .
+
+ex:student_dependency_status a cccev:InformationConcept ;
+    ex:mapsTo ex:Katerina .
+
+ex:student_or_parent_owned_property_city a cccev:InformationConcept ;
+    ex:mapsTo ex:Thessaloniki,
+        ex:TinyVillage .
+
+ex:study_city a cccev:InformationConcept ;
+    ex:mapsTo ex:Athens .
+
+ex:taxisnet_credentials_condition a cccev:Constraint ;
+    dct:description "The applicant must hold TAXISnet login credentials." .
+
+ex:total_courses_count a cccev:InformationConcept ;
+    ex:mapsTo ex:KaterinaEduRecord .
+
+ex:valid_academic_identity_card_condition a cccev:Constraint ;
+    cccev:constrains ex:academic_identity_card_validity ;
+    dct:description "The student must hold a valid academic identity card." .
+
+ex:Dad a ns1:Person ;
+    ns1:birthDate "1970-01-01"^^xsd:date ;
+    ns1:hasChild ex:Fonis,
+        ex:Katerina ;
+    ns1:hasIncome ex:DadIncome ;
+    ns1:ownsRealEstate ex:DadMainProperty .
+
+ex:DadMainProperty a ns1:RealEstateProperty ;
+    ns1:propertyAreaM2 150.0 ;
+    ns1:propertyLocation ex:Thessaloniki .
+
+ex:Mom a ns1:Person ;
+    ns1:birthDate "1975-03-15"^^xsd:date ;
+    ns1:hasChild ex:Fonis,
+        ex:Katerina ;
+    ns1:hasIncome ex:MomIncome ;
+    ns1:ownsRealEstate ex:MomVillageHouse .
+
+ex:MomVillageHouse a ns1:RealEstateProperty ;
+    ns1:propertyAreaM2 80.0 ;
+    ns1:propertyLocation ex:TinyVillage .
+
+ex:DadIncome a ns1:IncomeRecord ;
+    ns1:amount 25000.0 ;
+    ns1:incomeYear "2024"^^xsd:gYear .
+
+ex:Fonis a ns1:Person ;
+    ns1:birthDate "2015-06-01"^^xsd:date ;
+    ns1:hasParent ex:Dad,
+        ex:Mom ;
+    ns1:isDependent true .
+
+ex:KaterinaIncome a ns1:IncomeRecord ;
+    ns1:amount 0.0 ;
+    ns1:incomeYear "2024"^^xsd:gYear .
+
+ex:MomIncome a ns1:IncomeRecord ;
+    ns1:amount 7000.0 ;
+    ns1:incomeYear "2024"^^xsd:gYear .
+
+ex:StudentApartment a ns1:Residence ;
+    ns1:leaseStartDate "2024-09-01"^^xsd:date ;
+    ns1:locatedIn ex:Athens ;
+    ns1:residenceType "Rented" .
+
+ex:Athens a ns1:Municipality ;
+    ns1:municipalityPopulation 664046 .
+
+ex:KaterinaEduRecord a ns1:EducationRecord ;
+    ns1:cityOfStudy ex:Athens ;
+    ns1:hasValidAcademicID true ;
+    ns1:passedCoursesCount 6 ;
+    ns1:totalCoursesCount 10 .
+
+ex:TinyVillage a ns1:Municipality ;
+    ns1:municipalityPopulation 500 .
+
+ex:Katerina a ns1:Applicant,
+        ns1:Person ;
+    ns1:birthDate "2003-05-20"^^xsd:date ;
+    ns1:citizenshipCountry "GR" ;
+    ns1:hasCurrentResidence ex:StudentApartment ;
+    ns1:hasEducation ex:KaterinaEduRecord ;
+    ns1:hasFamilyResidence ex:FamilyHome ;
+    ns1:hasIncome ex:KaterinaIncome ;
+    ns1:hasParent ex:Dad,
+        ex:Mom ;
+    ns1:isDependent true .
+
+ex:Thessaloniki a ns1:Municipality ;
+    ns1:municipalityPopulation 315196 .
+

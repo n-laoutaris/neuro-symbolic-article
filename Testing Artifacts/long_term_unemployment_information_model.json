@@ -1,0 +1,216 @@
+[
+  {
+    "name": "citizenship_condition",
+    "desc": "Be a Greek citizen or a citizen of an EU Member State.",
+    "constrains": [
+      {
+        "name": "citizenship_country",
+        "related_paths": [
+          {
+            "path": [
+              "citizenshipCountry"
+            ],
+            "datatype": "xsd:string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "unemployment_insurance_condition",
+    "desc": "Be insured against unemployment.",
+    "constrains": []
+  },
+  {
+    "name": "regular_unemployment_benefit_exhaustion_condition",
+    "desc": "Have exhausted entitlement to the 12-month regular unemployment benefit.",
+    "constrains": [
+      {
+        "name": "regular_benefit_months_paid",
+        "related_paths": [
+          {
+            "path": [
+              "hasRegularBenefitRecord",
+              "regularBenefitMonthsPaid"
+            ],
+            "datatype": "xsd:integer"
+          }
+        ]
+      },
+      {
+        "name": "regular_benefit_start_date",
+        "related_paths": [
+          {
+            "path": [
+              "hasRegularBenefitRecord",
+              "regularBenefitStartDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "continuous_unemployment_registration_condition",
+    "desc": "At the date of application, have completed 12 consecutive months of unemployment and remain registered in the DYPA unemployment register.",
+    "constrains": [
+      {
+        "name": "unemployment_registration_start_date",
+        "related_paths": [
+          {
+            "path": [
+              "hasUnemploymentRegistration",
+              "registrationStartDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      },
+      {
+        "name": "current_unemployment_registration_status",
+        "related_paths": [
+          {
+            "path": [
+              "hasUnemploymentRegistration",
+              "isCurrentlyRegistered"
+            ],
+            "datatype": "xsd:boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "age_at_application_condition",
+    "desc": "Be aged from 20 to 66 years at the time of application.",
+    "constrains": [
+      {
+        "name": "applicant_birth_date",
+        "related_paths": [
+          {
+            "path": [
+              "birthDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "application_submission_deadline_condition",
+    "desc": "Submit the application, with the required supporting documents, within two months of the end of the 12-month regular unemployment benefit.",
+    "constrains": [
+      {
+        "name": "regular_benefit_start_date",
+        "related_paths": [
+          {
+            "path": [
+              "hasRegularBenefitRecord",
+              "regularBenefitStartDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      },
+      {
+        "name": "regular_benefit_months_paid",
+        "related_paths": [
+          {
+            "path": [
+              "hasRegularBenefitRecord",
+              "regularBenefitMonthsPaid"
+            ],
+            "datatype": "xsd:integer"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "annual_family_income_threshold_condition",
+    "desc": "Have annual family income not exceeding €10,000, increased by €586.08 for each dependent child under 18. Annual family income includes the applicant's, spouse's, and minor children's total annual taxable, exempt, or specially taxed income from all sources for the tax year two years before entitlement is exercised, excluding severance compensation. Unemployment, sickness, maternity, and long-term unemployment benefits are not included in annual family income. For unmarried adult beneficiaries, family income means the individual's income.",
+    "constrains": [
+      {
+        "name": "annual_family_income",
+        "related_paths": [
+          {
+            "path": [
+              "hasIncome",
+              "amount"
+            ],
+            "datatype": "xsd:decimal"
+          },
+          {
+            "path": [
+              "hasSpouse",
+              "hasIncome",
+              "amount"
+            ],
+            "datatype": "xsd:decimal"
+          },
+          {
+            "path": [
+              "hasChild",
+              "hasIncome",
+              "amount"
+            ],
+            "datatype": "xsd:decimal"
+          }
+        ]
+      },
+      {
+        "name": "family_income_tax_year",
+        "related_paths": [
+          {
+            "path": [
+              "hasIncome",
+              "incomeYear"
+            ],
+            "datatype": "xsd:gYear"
+          },
+          {
+            "path": [
+              "hasSpouse",
+              "hasIncome",
+              "incomeYear"
+            ],
+            "datatype": "xsd:gYear"
+          },
+          {
+            "path": [
+              "hasChild",
+              "hasIncome",
+              "incomeYear"
+            ],
+            "datatype": "xsd:gYear"
+          }
+        ]
+      },
+      {
+        "name": "dependent_child_birth_dates",
+        "related_paths": [
+          {
+            "path": [
+              "hasChild",
+              "birthDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      },
+      {
+        "name": "spouse",
+        "related_paths": [
+          {
+            "path": [
+              "hasSpouse"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      }
+    ]
+  }
+]

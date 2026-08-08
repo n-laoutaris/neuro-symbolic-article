@@ -1,0 +1,354 @@
+[
+  {
+    "name": "nationality_condition",
+    "desc": "The student must be a Greek national or a national of another European Union Member State.",
+    "constrains": [
+      {
+        "name": "citizenship_country",
+        "related_paths": [
+          {
+            "path": [
+              "citizenshipCountry"
+            ],
+            "datatype": "xsd:string"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "taxisnet_credentials_condition",
+    "desc": "The applicant must hold TAXISnet login credentials.",
+    "constrains": []
+  },
+  {
+    "name": "valid_academic_identity_card_condition",
+    "desc": "The student must hold a valid academic identity card.",
+    "constrains": [
+      {
+        "name": "academic_identity_card_validity",
+        "related_paths": [
+          {
+            "path": [
+              "hasEducation",
+              "hasValidAcademicID"
+            ],
+            "datatype": "xsd:boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rented_study_residence_condition",
+    "desc": "The student must reside, for study purposes, in rented accommodation in a city other than their principal residence. Neither the student nor their parents may hold full ownership or usufruct rights over a residence in that city.",
+    "constrains": [
+      {
+        "name": "current_residence_type",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "residenceType"
+            ],
+            "datatype": "xsd:string"
+          }
+        ]
+      },
+      {
+        "name": "study_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasEducation",
+              "cityOfStudy"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "current_residence_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "locatedIn"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "principal_residence_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasFamilyResidence",
+              "locatedIn"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "student_or_parent_owned_property_city",
+        "related_paths": [
+          {
+            "path": [
+              "ownsRealEstate",
+              "propertyLocation"
+            ],
+            "datatype": "URI"
+          },
+          {
+            "path": [
+              "hasParent",
+              "ownsRealEstate",
+              "propertyLocation"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "minimum_lease_duration_condition",
+    "desc": "The lease must be valid for at least six months.",
+    "constrains": [
+      {
+        "name": "lease_start_date",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "leaseStartDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "residential_property_area_limit_condition",
+    "desc": "The student’s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented residences exceeding a total of 200 sq. m.; residences or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.",
+    "constrains": [
+      {
+        "name": "aggregated_residential_property_area",
+        "related_paths": [
+          {
+            "path": [
+              "ownsRealEstate",
+              "propertyAreaM2"
+            ],
+            "datatype": "xsd:decimal"
+          },
+          {
+            "path": [
+              "hasParent",
+              "ownsRealEstate",
+              "propertyAreaM2"
+            ],
+            "datatype": "xsd:decimal"
+          }
+        ]
+      },
+      {
+        "name": "property_municipality",
+        "related_paths": [
+          {
+            "path": [
+              "ownsRealEstate",
+              "propertyLocation"
+            ],
+            "datatype": "URI"
+          },
+          {
+            "path": [
+              "hasParent",
+              "ownsRealEstate",
+              "propertyLocation"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "property_municipality_population",
+        "related_paths": [
+          {
+            "path": [
+              "ownsRealEstate",
+              "propertyLocation",
+              "municipalityPopulation"
+            ],
+            "datatype": "xsd:integer"
+          },
+          {
+            "path": [
+              "hasParent",
+              "ownsRealEstate",
+              "propertyLocation",
+              "municipalityPopulation"
+            ],
+            "datatype": "xsd:integer"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "family_income_threshold_condition",
+    "desc": "The family’s annual income for the preceding year must not exceed €30,000, increased by €3,000 for each dependent child beyond the first.",
+    "constrains": [
+      {
+        "name": "aggregated_family_annual_income",
+        "related_paths": [
+          {
+            "path": [
+              "hasIncome",
+              "amount"
+            ],
+            "datatype": "xsd:decimal"
+          },
+          {
+            "path": [
+              "hasParent",
+              "hasIncome",
+              "amount"
+            ],
+            "datatype": "xsd:decimal"
+          }
+        ]
+      },
+      {
+        "name": "income_record_year",
+        "related_paths": [
+          {
+            "path": [
+              "hasIncome",
+              "incomeYear"
+            ],
+            "datatype": "xsd:gYear"
+          },
+          {
+            "path": [
+              "hasParent",
+              "hasIncome",
+              "incomeYear"
+            ],
+            "datatype": "xsd:gYear"
+          }
+        ]
+      },
+      {
+        "name": "dependent_children",
+        "related_paths": [
+          {
+            "path": [
+              "hasParent",
+              "hasChild",
+              "isDependent"
+            ],
+            "datatype": "xsd:boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "course_completion_condition",
+    "desc": "The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested.",
+    "constrains": [
+      {
+        "name": "passed_courses_count",
+        "related_paths": [
+          {
+            "path": [
+              "hasEducation",
+              "passedCoursesCount"
+            ],
+            "datatype": "xsd:integer"
+          }
+        ]
+      },
+      {
+        "name": "total_courses_count",
+        "related_paths": [
+          {
+            "path": [
+              "hasEducation",
+              "totalCoursesCount"
+            ],
+            "datatype": "xsd:integer"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "parent_beneficiary_afm_condition",
+    "desc": "Where the parent is the beneficiary, the application must state the taxpayer identification number (AFM) of the student and of the parent on whom the student is dependent. For divorced or separated parents, the beneficiary is the parent on whom the student is dependent.",
+    "constrains": []
+  },
+  {
+    "name": "parent_tax_return_filing_condition",
+    "desc": "The relevant parent must have filed an income tax return for the year in which the housing-allowance application is submitted.",
+    "constrains": []
+  },
+  {
+    "name": "exceptional_student_beneficiary_condition",
+    "desc": "The student may exceptionally be the beneficiary if they are orphaned by both parents; have parents residing abroad; are over 25 years old; or are required to file an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In this case, the student declares only their spouse’s AFM, if applicable.",
+    "constrains": [
+      {
+        "name": "student_birth_date",
+        "related_paths": [
+          {
+            "path": [
+              "birthDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      },
+      {
+        "name": "student_dependency_status",
+        "related_paths": [
+          {
+            "path": [
+              "isDependent"
+            ],
+            "datatype": "xsd:boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "cohabiting_student_eligibility_condition",
+    "desc": "For the cohabitation-based allowance, the cohabiting person must be an undergraduate student at a higher education institution pursuing their first degree and must not have exceeded the study duration, in semesters, required by the curriculum to obtain that degree.",
+    "constrains": []
+  },
+  {
+    "name": "cohabitation_same_study_location_condition",
+    "desc": "For the cohabitation-based allowance, the student and the cohabiting student must study in the same city or regional unit.",
+    "constrains": []
+  },
+  {
+    "name": "cohabiting_student_degree_and_duration_condition",
+    "desc": "The cohabiting student must not hold another higher-education degree and must not have exceeded the maximum study-period limit in semesters provided by the Study Regulations.",
+    "constrains": []
+  },
+  {
+    "name": "cohabitation_tenant_afm_or_dependency_condition",
+    "desc": "For the cohabitation-based allowance, the AFM declared as tenant on behalf of the other student must match the cohabiting student’s AFM, or the cohabiting student must include the student as a dependent child in their tax return.",
+    "constrains": []
+  },
+  {
+    "name": "cohabitation_lease_tenant_afm_condition",
+    "desc": "For the cohabitation-based allowance, the lease submitted with the application must list as tenant the AFM declared for the cohabiting student.",
+    "constrains": []
+  }
+]

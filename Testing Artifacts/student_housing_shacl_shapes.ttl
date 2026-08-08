@@ -5,27 +5,29 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-ex:eligible_nationality_shape
+ex:nationalityConditionShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:property [
         sh:path :citizenshipCountry ;
         sh:minCount 1 ;
         sh:in (
-            "AT" "BE" "BG" "HR" "CY" "CZ" "DK" "EE" "FI" "FR"
-            "DE" "GR" "HU" "IE" "IT" "LV" "LT" "LU" "MT" "NL"
-            "PL" "PT" "RO" "SK" "SI" "ES" "SE"
+            "GR"
+            "AT" "BE" "BG" "HR" "CY" "CZ" "DK" "EE" "FI"
+            "FR" "DE" "EL" "HU" "IE" "IT" "LV" "LT" "LU"
+            "MT" "NL" "PL" "PT" "RO" "SK" "SI" "ES" "SE"
         ) ;
-        sh:message "The student must be a Greek national or a national of another European Union Member State." ;
+        sh:message "The student must be a Greek national or a national of a European Union Member State." ;
     ] .
 
-ex:valid_academic_identity_card_shape
+ex:validAcademicIdentityCardConditionShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
         sh:message "The student does not hold a valid academic identity card." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
             SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
@@ -36,40 +38,53 @@ ex:valid_academic_identity_card_shape
         """ ;
     ] .
 
-ex:rented_accommodation_outside_principal_residence_shape
+ex:rentedStudyResidenceConditionShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The student must live in rented accommodation in the city of study and in a city different from their principal residence." ;
+        sh:message "The student must live in rented accommodation in the city of study, different from the principal residence, and neither the student nor a parent may own property in that city." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
             SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
                     ?this :hasCurrentResidence ?currentResidence .
                     ?currentResidence :residenceType "Rented" .
-                    ?currentResidence :locatedIn ?rentalCity .
-
-                    ?this :hasFamilyResidence ?familyResidence .
-                    ?familyResidence :locatedIn ?principalCity .
+                    ?currentResidence :locatedIn ?studyCity .
 
                     ?this :hasEducation ?education .
                     ?education :cityOfStudy ?studyCity .
 
-                    FILTER (?rentalCity != ?principalCity)
-                    FILTER (?rentalCity = ?studyCity)
+                    ?this :hasFamilyResidence ?familyResidence .
+                    ?familyResidence :locatedIn ?principalResidenceCity .
+                    FILTER (?principalResidenceCity != ?studyCity)
+
+                    FILTER NOT EXISTS {
+                        {
+                            ?this :ownsRealEstate ?property .
+                            ?property :propertyLocation ?studyCity .
+                        }
+                        UNION
+                        {
+                            ?this :hasParent ?parent .
+                            ?parent :ownsRealEstate ?property .
+                            ?property :propertyLocation ?studyCity .
+                        }
+                    }
                 }
             }
         """ ;
     ] .
 
-ex:minimum_lease_duration_shape
+ex:minimumLeaseDurationConditionShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The rented accommodation lease has not been valid for at least six months." ;
+        sh:message "The current residence lease has not been valid for at least six months." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
             SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
@@ -84,91 +99,14 @@ ex:minimum_lease_duration_shape
         """ ;
     ] .
 
-ex:no_student_or_parent_residence_in_rental_city_shape
+ex:residentialPropertyAreaLimitConditionShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The student or a parent owns or holds usufruct rights over a residence in the rental city." ;
+        sh:message "The total area of residential properties in municipalities with at least 3,000 inhabitants exceeds 200 square metres." ;
         sh:select """
-            SELECT ?this
-            WHERE {
-                ?this :hasCurrentResidence ?rentedResidence .
-                ?rentedResidence :locatedIn ?rentalCity .
-
-                {
-                    ?this :ownsRealEstate ?property .
-                    ?property :propertyLocation ?rentalCity .
-                }
-                UNION
-                {
-                    ?this :hasParent ?parent .
-                    ?parent :ownsRealEstate ?property .
-                    ?property :propertyLocation ?rentalCity .
-                }
-            }
-        """ ;
-    ] .
-
-ex:family_income_threshold_shape
-    a sh:NodeShape ;
-    sh:targetClass :Applicant ;
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "The annual family income exceeds the applicable threshold of 30000 euros plus 3000 euros for each dependent child beyond the first." ;
-        sh:select """
-            SELECT ?this
-            WHERE {
-                {
-                    SELECT ?this (SUM(?amount) AS ?totalIncome)
-                    WHERE {
-                        SELECT DISTINCT ?this ?incomeRecord ?amount
-                        WHERE {
-                            {
-                                ?this :hasIncome ?incomeRecord .
-                                ?incomeRecord :amount ?amount .
-                            }
-                            UNION
-                            {
-                                ?this :hasParent ?parent .
-                                ?parent :hasIncome ?incomeRecord .
-                                ?incomeRecord :amount ?amount .
-                            }
-                        }
-                    }
-                    GROUP BY ?this
-                }
-
-                {
-                    SELECT ?this (COUNT(DISTINCT ?child) AS ?dependentChildren)
-                    WHERE {
-                        ?this a :Applicant .
-                        OPTIONAL {
-                            ?this :hasParent ?parent .
-                            ?parent :hasChild ?child .
-                            ?child :isDependent true .
-                        }
-                    }
-                    GROUP BY ?this
-                }
-
-                BIND(
-                    30000 + ((?dependentChildren - 1) * 3000)
-                    AS ?incomeThreshold
-                )
-
-                FILTER (?totalIncome > ?incomeThreshold)
-            }
-        """ ;
-    ] .
-
-ex:total_qualifying_residential_property_area_shape
-    a sh:NodeShape ;
-    sh:targetClass :Applicant ;
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "The total qualifying residential property area owned by the student or parents exceeds 200 square metres." ;
-        sh:select """
+            PREFIX : <http://example.org/schema#>
             SELECT ?this
             WHERE {
                 {
@@ -178,20 +116,17 @@ ex:total_qualifying_residential_property_area_shape
                         WHERE {
                             {
                                 ?this :ownsRealEstate ?property .
-                                ?property :propertyAreaM2 ?area .
-                                ?property :propertyLocation ?municipality .
-                                ?municipality :municipalityPopulation ?population .
-                                FILTER (?population >= 3000)
                             }
                             UNION
                             {
                                 ?this :hasParent ?parent .
                                 ?parent :ownsRealEstate ?property .
-                                ?property :propertyAreaM2 ?area .
-                                ?property :propertyLocation ?municipality .
-                                ?municipality :municipalityPopulation ?population .
-                                FILTER (?population >= 3000)
                             }
+
+                            ?property :propertyAreaM2 ?area .
+                            ?property :propertyLocation ?municipality .
+                            ?municipality :municipalityPopulation ?population .
+                            FILTER (?population >= 3000)
                         }
                     }
                     GROUP BY ?this
@@ -201,20 +136,73 @@ ex:total_qualifying_residential_property_area_shape
         """ ;
     ] .
 
-ex:minimum_passed_courses_shape
+ex:familyIncomeThresholdConditionShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The family's annual income exceeds the permitted threshold of €30,000 plus €3,000 for each dependent child beyond the first." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            SELECT ?this
+            WHERE {
+                {
+                    SELECT ?this (SUM(?amount) AS ?totalIncome)
+                    WHERE {
+                        SELECT DISTINCT ?this ?incomeRecord ?amount
+                        WHERE {
+                            {
+                                ?this :hasIncome ?incomeRecord .
+                            }
+                            UNION
+                            {
+                                ?this :hasParent ?parent .
+                                ?parent :hasIncome ?incomeRecord .
+                            }
+
+                            ?incomeRecord :amount ?amount .
+                        }
+                    }
+                    GROUP BY ?this
+                }
+
+                {
+                    SELECT ?this (COUNT(DISTINCT ?child) AS ?dependentChildren)
+                    WHERE {
+                        ?this a :Applicant .
+
+                        OPTIONAL {
+                            ?this :hasParent ?parentForChild .
+                            ?parentForChild :hasChild ?child .
+                            ?child :isDependent true .
+                        }
+                    }
+                    GROUP BY ?this
+                }
+
+                FILTER (
+                    ?totalIncome >
+                    (30000 + (3000 * IF(?dependentChildren > 1, ?dependentChildren - 1, 0)))
+                )
+            }
+        """ ;
+    ] .
+
+ex:courseCompletionConditionShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
         sh:message "The student has not passed examinations in at least half of the courses of the preceding academic year." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
             SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
                     ?this :hasEducation ?education .
                     ?education :passedCoursesCount ?passedCourses .
                     ?education :totalCoursesCount ?totalCourses .
-                    FILTER (?passedCourses * 2 >= ?totalCourses)
+                    FILTER ((?passedCourses * 2) >= ?totalCourses)
                 }
             }
         """ ;

@@ -1,0 +1,53 @@
+@prefix ex: <http://example.org/> .
+    @prefix cccev: <http://data.europa.eu/m8g/> .
+    @prefix cpsv: <http://purl.org/vocab/cpsv#> .
+    @prefix dct: <http://purl.org/dc/terms/> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+    ex:long_term_unemployment a cpsv:PublicService .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:citizenship_condition .
+ex:citizenship_condition a cccev:Constraint ; dct:description "Be a Greek citizen or a citizen of an EU Member State." .
+ex:citizenship_condition cccev:constrains ex:citizenship_country .
+ex:citizenship_country a cccev:InformationConcept .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:unemployment_insurance_condition .
+ex:unemployment_insurance_condition a cccev:Constraint ; dct:description "Be insured against unemployment." .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:regular_unemployment_benefit_exhaustion_condition .
+ex:regular_unemployment_benefit_exhaustion_condition a cccev:Constraint ; dct:description "Have exhausted entitlement to the 12-month regular unemployment benefit." .
+ex:regular_unemployment_benefit_exhaustion_condition cccev:constrains ex:regular_benefit_months_paid .
+ex:regular_benefit_months_paid a cccev:InformationConcept .
+ex:regular_unemployment_benefit_exhaustion_condition cccev:constrains ex:regular_benefit_start_date .
+ex:regular_benefit_start_date a cccev:InformationConcept .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:continuous_unemployment_registration_condition .
+ex:continuous_unemployment_registration_condition a cccev:Constraint ; dct:description "At the date of application, have completed 12 consecutive months of unemployment and remain registered in the DYPA unemployment register." .
+ex:continuous_unemployment_registration_condition cccev:constrains ex:unemployment_registration_start_date .
+ex:unemployment_registration_start_date a cccev:InformationConcept .
+ex:continuous_unemployment_registration_condition cccev:constrains ex:current_unemployment_registration_status .
+ex:current_unemployment_registration_status a cccev:InformationConcept .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:age_at_application_condition .
+ex:age_at_application_condition a cccev:Constraint ; dct:description "Be aged from 20 to 66 years at the time of application." .
+ex:age_at_application_condition cccev:constrains ex:applicant_birth_date .
+ex:applicant_birth_date a cccev:InformationConcept .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:application_submission_deadline_condition .
+ex:application_submission_deadline_condition a cccev:Constraint ; dct:description "Submit the application, with the required supporting documents, within two months of the end of the 12-month regular unemployment benefit." .
+ex:application_submission_deadline_condition cccev:constrains ex:regular_benefit_start_date .
+ex:regular_benefit_start_date a cccev:InformationConcept .
+ex:application_submission_deadline_condition cccev:constrains ex:regular_benefit_months_paid .
+ex:regular_benefit_months_paid a cccev:InformationConcept .
+
+ex:long_term_unemployment cpsv:holdsRequirement ex:annual_family_income_threshold_condition .
+ex:annual_family_income_threshold_condition a cccev:Constraint ; dct:description "Have annual family income not exceeding €10,000, increased by €586.08 for each dependent child under 18. Annual family income includes the applicant's, spouse's, and minor children's total annual taxable, exempt, or specially taxed income from all sources for the tax year two years before entitlement is exercised, excluding severance compensation. Unemployment, sickness, maternity, and long-term unemployment benefits are not included in annual family income. For unmarried adult beneficiaries, family income means the individual's income." .
+ex:annual_family_income_threshold_condition cccev:constrains ex:annual_family_income .
+ex:annual_family_income a cccev:InformationConcept .
+ex:annual_family_income_threshold_condition cccev:constrains ex:family_income_tax_year .
+ex:family_income_tax_year a cccev:InformationConcept .
+ex:annual_family_income_threshold_condition cccev:constrains ex:dependent_child_birth_dates .
+ex:dependent_child_birth_dates a cccev:InformationConcept .
+ex:annual_family_income_threshold_condition cccev:constrains ex:spouse .
+ex:spouse a cccev:InformationConcept .
+

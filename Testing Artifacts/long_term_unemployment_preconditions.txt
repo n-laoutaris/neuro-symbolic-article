@@ -1,0 +1,10 @@
+- Be a Greek citizen or a citizen of an EU Member State.
+- Be insured against unemployment.
+- Have exhausted entitlement to the 12-month regular unemployment benefit.
+- At the date of application, have completed 12 consecutive months of unemployment and remain registered in the DYPA unemployment register.
+- Be aged from 20 to 66 years at the time of application.
+- Submit the application, with the required supporting documents, within two months of the end of the 12-month regular unemployment benefit.
+- Have annual family income not exceeding **€10,000**, increased by **€586.08 for each dependent child under 18**.
+  - Annual family income includes the applicant’s, spouse’s, and minor children’s total annual taxable, exempt, or specially taxed income from all sources for the tax year two years before entitlement is exercised, excluding severance compensation.
+  - Unemployment, sickness, maternity, and long-term unemployment benefits are not included in annual family income.
+  - For unmarried adult beneficiaries, family income means the individual’s income.

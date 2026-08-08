@@ -23,9 +23,9 @@ from src.testing_utils import apply_mutations, parse_validation_report
 
 load_dotenv()
 
-# document = "student_housing"
 # document = "parental_leave"
-document = "long_term_unemployment"
+# document = "long_term_unemployment"
+document = "student_housing"
 
 llm = ChatOpenAI(
     model="gpt-5.6-terra",
@@ -373,6 +373,7 @@ def shacl_validator_node(state: AgentState):
 
     # Load the Scenarios from YAML
     scenarios = yaml.safe_load(state["mutation_scenarios"])
+    violated_scenarios = []
 
     # Iterate through each scenario
     for scn in scenarios:
@@ -397,11 +398,12 @@ def shacl_validator_node(state: AgentState):
         
         if actual_violation_count != expected_violation_count:
             collected_errors.append(f"Scenario: {scenario_description}. Expected {expected_violation_count} violations but found {actual_violation_count}. Violated shapes: {violated_shapes}. Details: {violation_messages}")
+            violated_scenarios.append(scn['id'])
             
     if collected_errors:
         n_errors = len(collected_errors)
         full_report = " \n\n ".join(collected_errors)
-        message = "❌ [Validator] LOGIC_VALIDATION_ERROR."
+        message = f"❌ [Validator] LOGIC_VALIDATION_ERROR. ({n_errors} errors: {', '.join(violated_scenarios)})"
         print(message)
         append_run_log(message, state['file_name'])
         return {"shacl_validation_status": "LOGIC_VALIDATION_ERROR", 

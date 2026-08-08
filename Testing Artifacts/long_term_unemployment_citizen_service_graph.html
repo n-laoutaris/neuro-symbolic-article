@@ -1,0 +1,358 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1440px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "lightgrey", "id": "http://example.org/FrankyRegistration", "label": "FrankyRegistration", "shape": "dot"}, {"color": "beige", "id": "true", "label": "true", "shape": "box"}, {"color": "lightgrey", "id": "http://example.org/Manolis", "label": "Manolis", "shape": "dot"}, {"color": "beige", "id": "1964-11-05", "label": "1964-11-05", "shape": "box"}, {"color": "lightgrey", "id": "http://example.org/ManolisIncome", "label": "ManolisIncome", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/continuous_unemployment_registration_condition", "label": "continuous_unemployment_registration_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/current_unemployment_registration_status", "label": "current_unemployment_registration_status", "shape": "dot"}, {"color": "gold", "id": "http://example.org/long_term_unemployment", "label": "long_term_unemployment", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/annual_family_income_threshold_condition", "label": "annual_family_income_threshold_condition", "shape": "dot"}, {"color": "yellowgreen", "id": "http://example.org/Franky", "label": "Franky", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/age_at_application_condition", "label": "age_at_application_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/citizenship_country", "label": "citizenship_country", "shape": "dot"}, {"color": "lightgrey", "id": "http://example.org/FrankyIncome", "label": "FrankyIncome", "shape": "dot"}, {"color": "beige", "id": "6500.0", "label": "6500.0", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/spouse", "label": "spouse", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/application_submission_deadline_condition", "label": "application_submission_deadline_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/regular_benefit_months_paid", "label": "regular_benefit_months_paid", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/unemployment_insurance_condition", "label": "unemployment_insurance_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/family_income_tax_year", "label": "family_income_tax_year", "shape": "dot"}, {"color": "beige", "id": "2024", "label": "2024", "shape": "box"}, {"color": "lightgrey", "id": "http://example.org/FrankyRegularBenefit", "label": "FrankyRegularBenefit", "shape": "dot"}, {"color": "beige", "id": "2024-05-07", "label": "2024-05-07", "shape": "box"}, {"color": "maroon", "id": "http://example.org/regular_unemployment_benefit_exhaustion_condition", "label": "regular_unemployment_benefit_exhaustion_condition", "shape": "dot"}, {"color": "beige", "id": "Have exhausted entitlement to the 12-month regular unemployment benefit.", "label": "Have exhausted entitlement to the 12-month regular unemployment benefit.", "shape": "box"}, {"color": "maroon", "id": "http://example.org/citizenship_condition", "label": "citizenship_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/applicant_birth_date", "label": "applicant_birth_date", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/dependent_child_birth_dates", "label": "dependent_child_birth_dates", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/unemployment_registration_start_date", "label": "unemployment_registration_start_date", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/annual_family_income", "label": "annual_family_income", "shape": "dot"}, {"color": "beige", "id": "4000.0", "label": "4000.0", "shape": "box"}, {"color": "beige", "id": "Be insured against unemployment.", "label": "Be insured against unemployment.", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/regular_benefit_start_date", "label": "regular_benefit_start_date", "shape": "dot"}, {"color": "beige", "id": "1966-02-10", "label": "1966-02-10", "shape": "box"}, {"color": "beige", "id": "Have annual family income not exceeding \u20ac10,000, increased by \u20ac586.08 for each dependent child under 18. Annual family income includes the applicant\u0027s, spouse\u0027s, and minor children\u0027s total annual taxable, exempt, or specially taxed income from all sources for the tax year two years before entitlement is exercised, excluding severance compensation. Unemployment, sickness, maternity, and long-term unemployment benefits are not included in annual family income. For unmarried adult beneficiaries, family income means the individual\u0027s income.", "label": "Have annual family income not exceeding \u20ac10,000, increased by \u20ac586.08 for each dependent child under 18. Annual family income includes the applicant\u0027s, spouse\u0027s, and minor children\u0027s total annual taxable, exempt, or specially taxed income from all sources for the tax year two years before entitlement is exercised, excluding severance compensation. Unemployment, sickness, maternity, and long-term unemployment benefits are not included in annual family income. For unmarried adult beneficiaries, family income means the individual\u0027s income.", "shape": "box"}, {"color": "beige", "id": "At the date of application, have completed 12 consecutive months of unemployment and remain registered in the DYPA unemployment register.", "label": "At the date of application, have completed 12 consecutive months of unemployment and remain registered in the DYPA unemployment register.", "shape": "box"}, {"color": "beige", "id": "Be a Greek citizen or a citizen of an EU Member State.", "label": "Be a Greek citizen or a citizen of an EU Member State.", "shape": "box"}, {"color": "lightgrey", "id": "http://example.org/Veronica", "label": "Veronica", "shape": "dot"}, {"color": "beige", "id": "GR", "label": "GR", "shape": "box"}, {"color": "beige", "id": "Be aged from 20 to 66 years at the time of application.", "label": "Be aged from 20 to 66 years at the time of application.", "shape": "box"}, {"color": "beige", "id": "Submit the application, with the required supporting documents, within two months of the end of the 12-month regular unemployment benefit.", "label": "Submit the application, with the required supporting documents, within two months of the end of the 12-month regular unemployment benefit.", "shape": "box"}, {"color": "beige", "id": "2011-04-18", "label": "2011-04-18", "shape": "box"}, {"color": "beige", "id": "2025-07-07", "label": "2025-07-07", "shape": "box"}, {"color": "beige", "id": "12", "label": "12", "shape": "box"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "http://example.org/FrankyRegistration", "label": "isCurrentlyRegistered", "to": "true"}, {"arrows": "to", "from": "http://example.org/Manolis", "label": "birthDate", "to": "1964-11-05"}, {"arrows": "to", "from": "http://example.org/Manolis", "label": "hasIncome", "to": "http://example.org/ManolisIncome"}, {"arrows": "to", "from": "http://example.org/continuous_unemployment_registration_condition", "label": "constrains", "to": "http://example.org/current_unemployment_registration_status"}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/annual_family_income_threshold_condition"}, {"arrows": "to", "from": "http://example.org/Franky", "label": "hasUnemploymentRegistration", "to": "http://example.org/FrankyRegistration"}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/age_at_application_condition"}, {"arrows": "to", "from": "http://example.org/citizenship_country", "label": "mapsTo", "to": "http://example.org/Franky"}, {"arrows": "to", "from": "http://example.org/FrankyIncome", "label": "amount", "to": "6500.0"}, {"arrows": "to", "from": "http://example.org/spouse", "label": "mapsTo", "to": "http://example.org/Manolis"}, {"arrows": "to", "from": "http://example.org/application_submission_deadline_condition", "label": "constrains", "to": "http://example.org/regular_benefit_months_paid"}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/unemployment_insurance_condition"}, {"arrows": "to", "from": "http://example.org/family_income_tax_year", "label": "mapsTo", "to": "http://example.org/FrankyIncome"}, {"arrows": "to", "from": "http://example.org/ManolisIncome", "label": "incomeYear", "to": "2024"}, {"arrows": "to", "from": "http://example.org/annual_family_income_threshold_condition", "label": "constrains", "to": "http://example.org/spouse"}, {"arrows": "to", "from": "http://example.org/Franky", "label": "hasIncome", "to": "http://example.org/FrankyIncome"}, {"arrows": "to", "from": "http://example.org/Franky", "label": "hasSpouse", "to": "http://example.org/Manolis"}, {"arrows": "to", "from": "http://example.org/FrankyRegularBenefit", "label": "regularBenefitStartDate", "to": "2024-05-07"}, {"arrows": "to", "from": "http://example.org/Franky", "label": "hasRegularBenefitRecord", "to": "http://example.org/FrankyRegularBenefit"}, {"arrows": "to", "from": "http://example.org/regular_unemployment_benefit_exhaustion_condition", "label": "description", "to": "Have exhausted entitlement to the 12-month regular unemployment benefit."}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/citizenship_condition"}, {"arrows": "to", "from": "http://example.org/applicant_birth_date", "label": "mapsTo", "to": "http://example.org/Franky"}, {"arrows": "to", "from": "http://example.org/current_unemployment_registration_status", "label": "mapsTo", "to": "http://example.org/FrankyRegistration"}, {"arrows": "to", "from": "http://example.org/annual_family_income_threshold_condition", "label": "constrains", "to": "http://example.org/dependent_child_birth_dates"}, {"arrows": "to", "from": "http://example.org/continuous_unemployment_registration_condition", "label": "constrains", "to": "http://example.org/unemployment_registration_start_date"}, {"arrows": "to", "from": "http://example.org/annual_family_income_threshold_condition", "label": "constrains", "to": "http://example.org/annual_family_income"}, {"arrows": "to", "from": "http://example.org/unemployment_registration_start_date", "label": "mapsTo", "to": "http://example.org/FrankyRegistration"}, {"arrows": "to", "from": "http://example.org/age_at_application_condition", "label": "constrains", "to": "http://example.org/applicant_birth_date"}, {"arrows": "to", "from": "http://example.org/ManolisIncome", "label": "amount", "to": "4000.0"}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/application_submission_deadline_condition"}, {"arrows": "to", "from": "http://example.org/unemployment_insurance_condition", "label": "description", "to": "Be insured against unemployment."}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/continuous_unemployment_registration_condition"}, {"arrows": "to", "from": "http://example.org/annual_family_income", "label": "mapsTo", "to": "http://example.org/FrankyIncome"}, {"arrows": "to", "from": "http://example.org/application_submission_deadline_condition", "label": "constrains", "to": "http://example.org/regular_benefit_start_date"}, {"arrows": "to", "from": "http://example.org/family_income_tax_year", "label": "mapsTo", "to": "http://example.org/ManolisIncome"}, {"arrows": "to", "from": "http://example.org/regular_benefit_start_date", "label": "mapsTo", "to": "http://example.org/FrankyRegularBenefit"}, {"arrows": "to", "from": "http://example.org/Franky", "label": "birthDate", "to": "1966-02-10"}, {"arrows": "to", "from": "http://example.org/long_term_unemployment", "label": "holdsRequirement", "to": "http://example.org/regular_unemployment_benefit_exhaustion_condition"}, {"arrows": "to", "from": "http://example.org/annual_family_income_threshold_condition", "label": "description", "to": "Have annual family income not exceeding \u20ac10,000, increased by \u20ac586.08 for each dependent child under 18. Annual family income includes the applicant\u0027s, spouse\u0027s, and minor children\u0027s total annual taxable, exempt, or specially taxed income from all sources for the tax year two years before entitlement is exercised, excluding severance compensation. Unemployment, sickness, maternity, and long-term unemployment benefits are not included in annual family income. For unmarried adult beneficiaries, family income means the individual\u0027s income."}, {"arrows": "to", "from": "http://example.org/annual_family_income_threshold_condition", "label": "constrains", "to": "http://example.org/family_income_tax_year"}, {"arrows": "to", "from": "http://example.org/continuous_unemployment_registration_condition", "label": "description", "to": "At the date of application, have completed 12 consecutive months of unemployment and remain registered in the DYPA unemployment register."}, {"arrows": "to", "from": "http://example.org/citizenship_condition", "label": "description", "to": "Be a Greek citizen or a citizen of an EU Member State."}, {"arrows": "to", "from": "http://example.org/Franky", "label": "hasChild", "to": "http://example.org/Veronica"}, {"arrows": "to", "from": "http://example.org/FrankyIncome", "label": "incomeYear", "to": "2024"}, {"arrows": "to", "from": "http://example.org/Franky", "label": "citizenshipCountry", "to": "GR"}, {"arrows": "to", "from": "http://example.org/age_at_application_condition", "label": "description", "to": "Be aged from 20 to 66 years at the time of application."}, {"arrows": "to", "from": "http://example.org/dependent_child_birth_dates", "label": "mapsTo", "to": "http://example.org/Veronica"}, {"arrows": "to", "from": "http://example.org/application_submission_deadline_condition", "label": "description", "to": "Submit the application, with the required supporting documents, within two months of the end of the 12-month regular unemployment benefit."}, {"arrows": "to", "from": "http://example.org/annual_family_income", "label": "mapsTo", "to": "http://example.org/ManolisIncome"}, {"arrows": "to", "from": "http://example.org/regular_unemployment_benefit_exhaustion_condition", "label": "constrains", "to": "http://example.org/regular_benefit_start_date"}, {"arrows": "to", "from": "http://example.org/regular_benefit_months_paid", "label": "mapsTo", "to": "http://example.org/FrankyRegularBenefit"}, {"arrows": "to", "from": "http://example.org/Veronica", "label": "birthDate", "to": "2011-04-18"}, {"arrows": "to", "from": "http://example.org/FrankyRegistration", "label": "registrationStartDate", "to": "2025-07-07"}, {"arrows": "to", "from": "http://example.org/citizenship_condition", "label": "constrains", "to": "http://example.org/citizenship_country"}, {"arrows": "to", "from": "http://example.org/FrankyRegularBenefit", "label": "regularBenefitMonthsPaid", "to": "12"}, {"arrows": "to", "from": "http://example.org/regular_unemployment_benefit_exhaustion_condition", "label": "constrains", "to": "http://example.org/regular_benefit_months_paid"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
