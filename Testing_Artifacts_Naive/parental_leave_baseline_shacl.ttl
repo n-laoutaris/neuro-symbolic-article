@@ -1,0 +1,87 @@
+@prefix : <http://example.org/schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+:ParentalLeaveAllowanceEligibilityShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    rdfs:comment """
+        Validates the eligibility conditions that can be represented using the
+        supplied ontology schema. The supplied schema contains no properties
+        for TAXISnet credentials, DYPA registration number, employer Form E.14,
+        parental-care status, employment relationship type, public-sector
+        labour-law coverage, leave duration, multiple births, single-parent
+        status, or statutory exceptions to the one-year employment condition.
+    """ ;
+
+    sh:property [
+        a sh:PropertyShape ;
+        sh:path :hasChild ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:class :Person ;
+        sh:message "Ο αιτών πρέπει να συνδέεται με τουλάχιστον ένα τέκνο ή πρόσωπο για το οποίο ασκεί γονική μέριμνα."
+    ] ;
+
+    sh:property [
+        a sh:PropertyShape ;
+        sh:path :hasEmployment ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:class :EmploymentRecord ;
+        sh:message "Ο αιτών πρέπει να διαθέτει τουλάχιστον μία εγγραφή απασχόλησης."
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Δεν υπάρχει τέκνο που να μην έχει συμπληρώσει το όγδοο έτος της ηλικίας του." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+                FILTER NOT EXISTS {
+                    $this :hasChild ?child .
+                    ?child :birthDate ?birthDate .
+
+                    FILTER ( datatype(?birthDate) = xsd:date )
+
+                    BIND(
+                        xsd:date(
+                            NOW() - "P8Y"^^xsd:yearMonthDuration
+                        ) AS ?eighthBirthdayCutoff
+                    )
+
+                    FILTER ( ?birthDate > ?eighthBirthdayCutoff )
+                }
+            }
+        """
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Ο αιτών δεν διαθέτει ενεργή επιλέξιμη απασχόληση στον ιδιωτικό ή δημόσιο τομέα με τουλάχιστον ένα έτος υπηρεσίας στον ίδιο εργοδότη ή σε συνεχή/διαδοχική σειρά συμβάσεων." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+                FILTER NOT EXISTS {
+                    $this :hasEmployment ?employment .
+
+                    ?employment :isActive true ;
+                                :employmentSector ?sector ;
+                                :employmentStartDate ?startDate .
+
+                    FILTER ( datatype(?sector) = xsd:string )
+                    FILTER ( datatype(?startDate) = xsd:date )
+                    FILTER ( ?sector IN ( "Private"^^xsd:string, "Public"^^xsd:string ) )
+
+                    BIND(
+                        xsd:date(
+                            NOW() - "P1Y"^^xsd:yearMonthDuration
+                        ) AS ?oneYearCutoff
+                    )
+
+                    FILTER ( ?startDate <= ?oneYearCutoff )
+                }
+            }
+        """
+    ] .
