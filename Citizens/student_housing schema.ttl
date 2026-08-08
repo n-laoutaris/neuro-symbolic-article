@@ -1,0 +1,129 @@
+@prefix : <http://example.org/schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# CORE ENTITY
+:Person a rdfs:Class ;
+    rdfs:comment "A human individual." .
+
+:Applicant a rdfs:Class ;
+    rdfs:subClassOf :Person ;
+    rdfs:comment "A person actively applying for a public service. Used as the Focus Node for SHACL validation." .
+    
+#  Basic Attributes 
+:citizenshipCountry a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:string ;
+    rdfs:comment "ISO code (e.g., 'GR', 'FR')." .
+
+:birthDate a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:date .
+
+:isDependent a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Flag to explicitly mark a family member as a dependent." .
+
+#  Relationships 
+:hasParent a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Person .
+
+:hasChild a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Person .
+
+# RESIDENCE & HOUSING 
+:Residence a rdfs:Class ;
+    rdfs:comment "A place where a person lives, either rented or owned." .
+
+:Municipality a rdfs:Class ;
+    rdfs:comment "The city or administrative area of a residence." .
+
+#  Residence Properties 
+:hasCurrentResidence a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Residence ;
+    rdfs:comment "Where the student is currently living." .
+
+:hasFamilyResidence a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Residence ;
+    rdfs:comment "The permanent home of the parents/family." .
+
+:locatedIn a rdf:Property ;
+    rdfs:domain :Residence ;
+    rdfs:range :Municipality .
+
+:residenceType a rdf:Property ;
+    rdfs:domain :Residence ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Values: 'Rented', 'Owned', 'Guest'." .
+
+:leaseStartDate a rdf:Property ;
+    rdfs:domain :Residence ;
+    rdfs:range xsd:date ;
+    rdfs:comment "If rented, when the lease started." .
+
+# INCOME 
+:IncomeRecord a rdfs:Class ;
+    rdfs:comment "Financial data for a specific year." .
+
+:hasIncome a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :IncomeRecord .
+
+:incomeYear a rdf:Property ;
+    rdfs:domain :IncomeRecord ;
+    rdfs:range xsd:gYear .
+
+:amount a rdf:Property ;
+    rdfs:domain :IncomeRecord ;
+    rdfs:range xsd:decimal .
+
+# REAL ESTATE ASSETS
+:RealEstateProperty a rdfs:Class ;
+    rdfs:comment "A distinct physical property owned by someone." .
+
+:ownsRealEstate a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :RealEstateProperty .
+
+:propertyAreaM2 a rdf:Property ;
+    rdfs:domain :RealEstateProperty ;
+    rdfs:range xsd:decimal .
+
+:propertyLocation a rdf:Property ;
+    rdfs:domain :RealEstateProperty ;
+    rdfs:range :Municipality .
+
+:municipalityPopulation a rdf:Property ;
+    rdfs:domain :Municipality ;
+    rdfs:range xsd:integer .
+
+# EDUCATION
+:EducationRecord a rdfs:Class ;
+    rdfs:comment "Academic status for a specific period." .
+
+:hasEducation a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :EducationRecord .
+
+:cityOfStudy a rdf:Property ;
+    rdfs:domain :EducationRecord ;
+    rdfs:range :Municipality ;
+    rdfs:comment "Links the education record to the City/Municipality of the University." .
+
+:hasValidAcademicID a rdf:Property ;
+    rdfs:domain :EducationRecord ;
+    rdfs:range xsd:boolean .
+
+:passedCoursesCount a rdf:Property ;
+    rdfs:domain :EducationRecord ;
+    rdfs:range xsd:integer .
+
+:totalCoursesCount a rdf:Property ;
+    rdfs:domain :EducationRecord ;
+    rdfs:range xsd:integer .

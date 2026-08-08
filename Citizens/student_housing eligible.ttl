@@ -1,0 +1,83 @@
+@prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# GEOGRAPHY
+ex:Athens a :Municipality ;
+    :municipalityPopulation 664046 .
+
+ex:Thessaloniki a :Municipality ;
+    :municipalityPopulation 315196 .
+
+ex:TinyVillage a :Municipality ;
+    :municipalityPopulation 500 .
+
+# THE APPLICANT
+ex:Katerina a :Applicant, :Person ;
+    :citizenshipCountry "GR" ;
+    :birthDate "2003-05-20"^^xsd:date ; # 22 Years old
+    :hasParent ex:Dad, ex:Mom ;
+    :isDependent true ;     
+    # Housing & Education
+    :hasCurrentResidence ex:StudentApartment ;
+    :hasFamilyResidence ex:FamilyHome ;
+    :hasEducation ex:KaterinaEduRecord ;
+    :hasIncome ex:KaterinaIncome .
+
+# THE FAMILY (Parents + Sibling)
+ex:Dad a :Person ;
+    :birthDate "1970-01-01"^^xsd:date ;
+    :hasChild ex:Katerina, ex:Fonis ;
+    :hasIncome ex:DadIncome ;
+    :ownsRealEstate ex:DadMainProperty .
+
+ex:Mom a :Person ;
+    :birthDate "1975-03-15"^^xsd:date ;
+    :hasChild ex:Katerina, ex:Fonis ;
+    :hasIncome ex:MomIncome ;
+    :ownsRealEstate ex:MomVillageHouse .
+
+ex:Fonis a :Person ;
+    :birthDate "2015-06-01"^^xsd:date ; # 10 Years old (Minor)
+    :isDependent true ;
+    :hasParent ex:Dad, ex:Mom .
+
+# RESIDENCES & LEASES
+ex:StudentApartment a :Residence ;
+    :locatedIn ex:Athens ;
+    :residenceType "Rented" ;
+    :leaseStartDate "2024-09-01"^^xsd:date .
+
+ex:FamilyHome a :Residence ;
+    :locatedIn ex:Thessaloniki ;
+    :residenceType "Owned" .
+
+# INCOME RECORDS 
+ex:KaterinaIncome a :IncomeRecord ;
+    :incomeYear "2024"^^xsd:gYear ;
+    :amount 0.0 .
+
+ex:DadIncome a :IncomeRecord ;
+    :incomeYear "2024"^^xsd:gYear ;
+    :amount 25000.0 . 
+
+ex:MomIncome a :IncomeRecord ;
+    :incomeYear "2024"^^xsd:gYear ;
+    :amount 7000.0 . 
+
+# EDUCATION RECORD
+ex:KaterinaEduRecord a :EducationRecord ;
+    :cityOfStudy ex:Athens ;
+    :hasValidAcademicID true ;
+    :passedCoursesCount 6 ;
+    :totalCoursesCount 10 .
+
+# REAL ESTATE ASSETS
+ex:DadMainProperty a :RealEstateProperty ;
+    :propertyLocation ex:Thessaloniki ;
+    :propertyAreaM2 150.0 .
+
+ex:MomVillageHouse a :RealEstateProperty ;
+    :propertyLocation ex:TinyVillage ;
+    :propertyAreaM2 80.0 .

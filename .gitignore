@@ -1,0 +1,18 @@
+# Python-specific Ignores
+__pycache__/
+
+# Secrets and Environment Files
+.env
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+.venv/
+
+# VS Code Workspace Files
+.vscode/
+
+# OneDrive Specific Files
+~$*

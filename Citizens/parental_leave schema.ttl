@@ -1,0 +1,49 @@
+@prefix : <http://example.org/schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# CORE ENTITY
+:Person a rdfs:Class ;
+    rdfs:comment "A human individual." .
+
+:Applicant a rdfs:Class ;
+    rdfs:subClassOf :Person ;
+    rdfs:comment "A person actively applying for the parental leave allowance. Used as the Focus Node for SHACL validation." .
+
+#  Basic Attributes 
+:birthDate a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:date ;
+    rdfs:comment "Used to calculate age (e.g., for the child)." .
+
+#  Relationships 
+:hasChild a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:comment "Links a parent to their child." .
+
+# EMPLOYMENT STATUS
+:EmploymentRecord a rdfs:Class ;
+    rdfs:comment "A record of an active or past employment contract." .
+
+:hasEmployment a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :EmploymentRecord ;
+    rdfs:comment "Links the applicant to their job details." .
+
+#  Employment Properties 
+:employmentSector a rdf:Property ;
+    rdfs:domain :EmploymentRecord ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The sector of employment. Expected values: 'Private', 'Public', 'Freelance' etc." .
+
+:employmentStartDate a rdf:Property ;
+    rdfs:domain :EmploymentRecord ;
+    rdfs:range xsd:date ;
+    rdfs:comment "The date the current employment or continuous contract series began." .
+
+:isActive a rdf:Property ;
+    rdfs:domain :EmploymentRecord ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "True if the employment is currently active." .

@@ -1,0 +1,81 @@
+- id: SCN_00
+  description: "Conforms to all preconditions."
+  expected_violation_count: 0
+  actions:
+    - type: no_action
+
+- id: SCN_01
+  description: "Not an EU citizen."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:Katerina :citizenshipCountry "CA" .
+
+- id: SCN_02
+  description: "No valid academic ID."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:KaterinaEduRecord :hasValidAcademicID false .
+
+- id: SCN_03
+  description: "Base income is too high."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:DadIncome :amount 26001.0 .
+
+- id: SCN_04
+  description: "Income threshold decreased due to no dependent children."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:Fonis :isDependent false .
+
+- id: SCN_05
+  description: "Study city is the same as family residence city."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: |
+        ex:Trikala a :Municipality ; :municipalityPopulation 50000 .
+        ex:StudentApartment :locatedIn ex:Trikala . 
+        ex:KaterinaEduRecord :cityOfStudy ex:Trikala .
+        ex:FamilyHome :locatedIn ex:Trikala ; :residenceType "Rented" .
+
+- id: SCN_06
+  description: "Parent owns property in study city."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:DadMainProperty :propertyLocation ex:Athens .
+
+- id: SCN_07
+  description: "Lease too short."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:StudentApartment :leaseStartDate "2026-07-01"^^xsd:date .
+
+- id: SCN_08
+  description: "Family property too big."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:DadMainProperty :propertyAreaM2 201.0 .
+
+- id: SCN_09
+  description: "Property threshold decreased due to large municipality."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:TinyVillage :municipalityPopulation 3001 .
+
+- id: SCN_10
+  description: "Bad academic performance."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:KaterinaEduRecord :passedCoursesCount 4 .
+
+
