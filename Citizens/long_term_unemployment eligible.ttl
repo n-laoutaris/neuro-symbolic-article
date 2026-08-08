@@ -1,0 +1,44 @@
+@prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# THE APPLICANT 
+ex:Franky a :Applicant, :Person ;
+    :citizenshipCountry "GR" ;
+    :birthDate "1966-02-10"^^xsd:date ; # 60 Years old
+    :hasSpouse ex:Manolis ;
+    :hasChild ex:Veronica ;
+    # Income
+    :hasIncome ex:FrankyIncome ;
+    # Unemployment status
+    :hasUnemploymentRegistration ex:FrankyRegistration ;
+    # Regular benefit history (must be exhausted)
+    :hasRegularBenefitRecord ex:FrankyRegularBenefit .
+
+# THE SPOUSE 
+ex:Manolis a :Person ;
+    :birthDate "1964-11-05"^^xsd:date ;
+    :hasIncome ex:ManolisIncome .
+
+# THE CHILD
+ex:Veronica a :Person ;
+    :birthDate "2011-04-18"^^xsd:date . # 15 Years old (Minor)
+
+# UNEMPLOYMENT REGISTRATION
+ex:FrankyRegistration a :UnemploymentRegistration ;
+    :registrationStartDate "2025-07-07"^^xsd:date ;
+    :isCurrentlyRegistered true .
+
+# REGULAR UNEMPLOYMENT BENEFIT RECORD
+ex:FrankyRegularBenefit a :RegularBenefitRecord ;
+    :regularBenefitStartDate "2024-05-07"^^xsd:date ;
+    :regularBenefitMonthsPaid 12 .
+
+# INCOME RECORDS
+ex:FrankyIncome a :IncomeRecord ;
+    :incomeYear "2024"^^xsd:gYear ;
+    :amount 6500.0 .
+
+ex:ManolisIncome a :IncomeRecord ;
+    :incomeYear "2024"^^xsd:gYear ;
+    :amount 4000.0 .

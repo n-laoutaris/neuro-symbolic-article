@@ -1,0 +1,91 @@
+@prefix : <http://example.org/schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# CORE ENTITY
+:Person a rdfs:Class ;
+    rdfs:comment "A human individual." .
+
+:Applicant a rdfs:Class ;
+    rdfs:subClassOf :Person ;
+    rdfs:comment "A person actively applying for the long-term unemployment benefit. Used as the Focus Node for SHACL validation." .
+
+#  Basic Attributes 
+:birthDate a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:date ;
+    rdfs:comment "Used to calculate age (age-range eligibility)." .
+
+:citizenshipCountry a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:string ;
+    rdfs:comment "ISO code (e.g., 'GR', 'FR'). The benefit is available to Greek citizens and citizens of other EU Member States." .
+
+#  Relationships 
+:hasChild a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:comment "Links a parent to their child. Used together with the child's birthDate to determine minor-child status; no pre-computed dependent count is stored." .
+
+
+# UNEMPLOYMENT REGISTRATION STATUS
+:UnemploymentRegistration a rdfs:Class ;
+    rdfs:comment "A single, continuous period of registration as unemployed with DYPA. An applicant may have multiple historical registration records; only the current/most recent one is generally relevant, but the schema does not presuppose this." .
+
+:hasUnemploymentRegistration a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :UnemploymentRegistration ;
+    rdfs:comment "Links the applicant to a period of unemployment registration." .
+
+:registrationStartDate a rdf:Property ;
+    rdfs:domain :UnemploymentRegistration ;
+    rdfs:range xsd:date ;
+    rdfs:comment "The date this continuous unemployment registration period began. Used to derive elapsed duration; no pre-computed duration value is stored." .
+
+:isCurrentlyRegistered a rdf:Property ;
+    rdfs:domain :UnemploymentRegistration ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "True if the applicant remains registered as unemployed with DYPA as of the application date (i.e., the registration has not been interrupted or closed)." .
+
+# REGULAR UNEMPLOYMENT BENEFIT HISTORY
+:RegularBenefitRecord a rdfs:Class ;
+    rdfs:comment "A record of a period during which the applicant received the regular (short-term) unemployment benefit, a prerequisite that must have been exhausted before the long-term benefit can be claimed." .
+
+:hasRegularBenefitRecord a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :RegularBenefitRecord ;
+    rdfs:comment "Links the applicant to a regular unemployment benefit record." .
+
+:regularBenefitStartDate a rdf:Property ;
+    rdfs:domain :RegularBenefitRecord ;
+    rdfs:range xsd:date ;
+    rdfs:comment "The date the regular unemployment benefit period began." .
+
+:regularBenefitMonthsPaid a rdf:Property ;
+    rdfs:domain :RegularBenefitRecord ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "The number of months of regular unemployment benefit actually paid out under this record. Compared against the statutory 12-month entitlement to determine whether it has been exhausted; the schema does not store a pre-computed 'exhausted' flag." .
+
+# INCOME
+:IncomeRecord a rdfs:Class ;
+    rdfs:comment "Taxable/actual/exempt/special-taxation income from any source for a specific tax year, excluding unemployment-related benefits and redundancy payments. Held individually per family member; no aggregated family total is stored." .
+
+:hasIncome a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :IncomeRecord .
+
+:incomeYear a rdf:Property ;
+    rdfs:domain :IncomeRecord ;
+    rdfs:range xsd:gYear ;
+    rdfs:comment "The tax year the income record refers to (the relevant year is two years prior to the year the right is exercised)." .
+
+:amount a rdf:Property ;
+    rdfs:domain :IncomeRecord ;
+    rdfs:range xsd:decimal .
+
+# MARITAL STATUS 
+:hasSpouse a rdf:Property ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:comment "Links an applicant to their spouse, if any. Family income for married applicants includes the spouse's income; for unmarried adult applicants, individual income is treated as household income." .

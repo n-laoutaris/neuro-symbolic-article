@@ -1,0 +1,112 @@
+# ==========================================
+# TEST SUITE: Long-Term Unemployment Benefit
+# Base Citizen: Franky (Eligible)
+# ==========================================
+
+- id: SCN_00
+  description: "Conforms to all preconditions."
+  expected_violation_count: 0
+  actions: []
+
+# ------------------------------------------
+# AGE CONDITION (20-66) - both directions of the range
+# ------------------------------------------
+
+- id: SCN_01
+  description: "Applicant is younger than 20."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:Franky :birthDate "2010-01-01"^^xsd:date .
+
+- id: SCN_02
+  description: "Applicant is older than 66."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:Franky :birthDate "1955-01-01"^^xsd:date .
+
+# ------------------------------------------
+# CONTINUOUS UNEMPLOYMENT CONDITION (>= 12 months, uninterrupted)
+# ------------------------------------------
+
+- id: SCN_03
+  description: "Unemployment registration is too recent (less than 12 months)."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:FrankyRegistration :registrationStartDate "2026-06-01"^^xsd:date .
+
+- id: SCN_04
+  description: "Registration duration would qualify, but applicant is no longer currently registered (interrupted registration)."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:FrankyRegistration :isCurrentlyRegistered false .
+
+# ------------------------------------------
+# REGULAR BENEFIT EXHAUSTION CONDITION (prerequisite gate)
+# ------------------------------------------
+
+- id: SCN_05
+  description: "Applicant never received the regular unemployment benefit (0 months paid)."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:FrankyRegularBenefit :regularBenefitMonthsPaid 0 .
+
+- id: SCN_06
+  description: "Applicant received the regular unemployment benefit but only partially (6 of 12 months), so it is not yet exhausted."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:FrankyRegularBenefit :regularBenefitMonthsPaid 6 .
+
+# ------------------------------------------
+# INCOME CONDITION (base cap + per-minor-child adjustment)
+# ------------------------------------------
+
+- id: SCN_07
+  description: "Household income exceeds the limit even with the child adjustment applied."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:FrankyIncome :amount 7000.0 .
+
+- id: SCN_08
+  description: "Spouse's income alone pushes the household total over the limit (tests that spousal income is correctly included in the aggregation)."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:ManolisIncome :amount 4200.0 .
+
+- id: SCN_09
+  description: "Child ages out of minor status (turns 18), removing the income credit and pushing the already-marginal household income over the now-lower limit (tests correct age-based filtering rather than naive child counting)."
+  expected_violation_count: 1
+  actions:
+    - type: patch_node
+      turtle: ex:Veronica :birthDate "2007-01-01"^^xsd:date .
+
+- id: SCN_10
+  description: "An additional minor child is added, raising the income limit further and keeping an otherwise-marginal household eligible (tests that the child credit correctly increases the cap, not just that a cap exists)."
+  expected_violation_count: 0
+  actions:
+    - type: patch_node
+      turtle: |
+        ex:Nikos a :Person ;
+          :birthDate "2016-03-01"^^xsd:date .
+        ex:Franky :hasChild ex:Nikos .
+        ex:FrankyIncome :amount 7000.0 .
+
+# ------------------------------------------
+# COMPOUND / EDGE SCENARIOS
+# ------------------------------------------
+
+- id: SCN_11
+  description: "Applicant fails multiple independent conditions simultaneously (too old AND income too high)."
+  expected_violation_count: 2
+  actions:
+    - type: patch_node
+      turtle: ex:Franky :birthDate "1950-01-01"^^xsd:date .
+    - type: patch_node
+      turtle: ex:FrankyIncome :amount 9000.0 .
