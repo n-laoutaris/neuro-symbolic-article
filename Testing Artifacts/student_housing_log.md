@@ -19,5 +19,7 @@
 ⚠️ Escalating. Terra (high thinking mode) activated.
 ⚙️ [Validator] Checking SHACL syntax and logic...
 ✅ [Validator] No errors found.
-💾 [Artifact Logger] Saving Artifacts to Testing_Artifacts_Test
-   [Success] Artifacts saved to: Testing_Artifacts_Test
+💾 [Artifact Logger] Saving Artifacts to Testing_Artifacts
+   [Success] Artifacts saved to: Testing_Artifacts
+
+Trace available at: https://smith.langchain.com/public/8e1abb0e-d838-4b5a-a80c-c9c765ce328e/r/019fe189-658d-7a30-b4b0-89a3ec491165?start_time=2026-08-08T13%3A21%3A45.867954Z

@@ -15,5 +15,7 @@
 🔍 [SHACL Generator] Creating SHACL shapes from JSON model... (Attempt 2)
 ⚙️ [Validator] Checking SHACL syntax and logic...
 ✅ [Validator] No errors found.
-💾 [Artifact Logger] Saving Artifacts to Testing_Artifacts_Test
-   [Success] Artifacts saved to: Testing_Artifacts_Test
+💾 [Artifact Logger] Saving Artifacts to Testing_Artifacts
+   [Success] Artifacts saved to: Testing_Artifacts
+
+Trace available at: https://smith.langchain.com/public/6cb75bfb-50be-4948-970d-3aff734c61ea/r/019fe17d-8e0f-7551-ab19-2661cfaa2848?start_time=2026-08-08T13%3A08%3A49.804701Z
