@@ -17,11 +17,15 @@ from typing import List
 import yaml
 from pyshacl import validate
 
-from src.parsing_utils import read_txt
+from src.parsing_utils import read_txt, setup_run_log, append_run_log
 from src.graph_utils import visualize_graph, resolve_node_path
 from src.testing_utils import apply_mutations, parse_validation_report
 
 load_dotenv()
+
+# document = "student_housing"
+# document = "parental_leave"
+document = "long_term_unemployment"
 
 llm = ChatOpenAI(
     model="gpt-5.6-terra",
@@ -77,7 +81,9 @@ class ConstraintsList(BaseModel):
 def ingestion_node(state: AgentState):
     """Deterministic PDF Parsing"""
     file_path = f"Precondition documents/{state['file_name']}.pdf"
-    print(f"📄 [Ingestion] Reading {file_path}...")
+    message = f"📄 [Ingestion] Reading {file_path}..."
+    print(message)
+    append_run_log(message, state['file_name'])
     text_content = []
     try:
         with open(file_path, 'rb') as file:
@@ -88,11 +94,15 @@ def ingestion_node(state: AgentState):
                     text_content.append(extracted + "\n")
         return{"raw_greek_text": "".join(text_content)}
     except Exception as e:
-        return f"Error reading PDF: {str(e)}"
+        error_message = f"Error reading PDF: {str(e)}"
+        append_run_log(error_message, state['file_name'])
+        return error_message
 
 def extraction_node(state: AgentState):
     """LLM for Extraction & Translation"""
-    print("🧠 [Extraction Agent] Isolating and translating preconditions...")
+    message = "🧠 [Extraction Agent] Isolating and translating preconditions..."
+    print(message)
+    append_run_log(message, state['file_name'])
     
     system_prompt = read_txt(f'Prompts/extraction.txt')
     
@@ -106,7 +116,9 @@ def extraction_node(state: AgentState):
 
 def json_structuring_node(state: AgentState):
     """LLM for JSON Information Model Structuring"""
-    print("🏗️ [JSON Architect] Mapping preconditions to TTL ontology...")      
+    message = "🏗️ [JSON Architect] Mapping preconditions to TTL ontology..."
+    print(message)
+    append_run_log(message, state['file_name'])
 
     system_prompt = read_txt(f'Prompts/JSON_structuring.txt')
     preconditions = state["preconditions"]
@@ -129,7 +141,9 @@ def json_structuring_node(state: AgentState):
 
 def service_graph_node(state: AgentState):
     """LLM for Service Graph Generation"""
-    print("🕸️ [Graph Builder] Creating service graph from JSON model...")
+    message = "🕸️ [Graph Builder] Creating service graph from JSON model..."
+    print(message)
+    append_run_log(message, state['file_name'])
     # Parse JSON string
     info_model = json.loads(state["json_model"])
     service_name = state["file_name"]
@@ -171,7 +185,9 @@ def service_graph_node(state: AgentState):
 
 def citizen_service_graph_node(state: AgentState):
     """LLM for Citizen Service Graph Generation"""
-    print("🕸️ [Graph Builder] Creating citizen service graph...")
+    message = "🕸️ [Graph Builder] Creating citizen service graph..."
+    print(message)
+    append_run_log(message, state['file_name'])
     EX = Namespace("http://example.org/")
     SC = Namespace("http://example.org/schema#")
 
@@ -214,7 +230,10 @@ def citizen_service_graph_node(state: AgentState):
 
 def shacl_generator_node(state: AgentState):
     """LLM for SHACL Generation"""
-    print("🔍 [SHACL Generator] Creating SHACL shapes from JSON model...")         
+    attempt_count = state.get('shacl_validation_retries', 0) + 1
+    message = f"🔍 [SHACL Generator] Creating SHACL shapes from JSON model... (Attempt {attempt_count})"
+    print(message)
+    append_run_log(message, state['file_name'])
 
     system_prompt = read_txt(f'Prompts/SHACL_generation.txt')    
     messages = [
@@ -223,10 +242,30 @@ def shacl_generator_node(state: AgentState):
     ] + state.get("messages", [])  # Include any messages from previous validation attempts
     # Reminder: state messages only carry the conversation history after the system prompt and human context. So we append them at the end of the conversation start.
     
-    if state.get("shacl_validation_retries", 0) >= 2:
-        print("⚠️ Escalating. High thinking mode active.")
+    if attempt_count == 3:
+        message = "⚠️ Escalating. Terra (high thinking mode) activated."
+        print(message)
+        append_run_log(message, state['file_name'])
         active_llm = ChatOpenAI(
             model="gpt-5.6-terra",
+            temperature = 0,
+            reasoning_effort = "high", 
+            max_retries = 2)
+    elif attempt_count == 5:
+        message = "⚠️ Escalating. Sol (medium thinking mode) activated."
+        print(message)
+        append_run_log(message, state['file_name'])
+        active_llm = ChatOpenAI(
+            model="gpt-5.6-sol",
+            temperature = 0,
+            reasoning_effort = "medium", 
+            max_retries = 2)
+    elif attempt_count == 7:
+        message = "⚠️ Escalating. Sol (high thinking mode) activated."
+        print(message)
+        append_run_log(message, state['file_name'])
+        active_llm = ChatOpenAI(
+            model="gpt-5.6-sol",
             temperature = 0,
             reasoning_effort = "high", 
             max_retries = 2)
@@ -241,7 +280,9 @@ def shacl_validator_node(state: AgentState):
     """
     Validates the syntactic correctness of a SHACL file in Turtle format.
     """
-    print("⚙️ [Validator] Checking SHACL syntax and logic...")
+    message = "⚙️ [Validator] Checking SHACL syntax and logic..."
+    print(message)
+    append_run_log(message, state['file_name'])
     shacl_ttl_string = state["shacl_shapes"]
 
     ### RDF Syntax Validation
@@ -251,7 +292,9 @@ def shacl_validator_node(state: AgentState):
     except Exception as e:
         # We catch the error and return it as a string for the LLM to read
         error_msg = str(e)
-        print("❌ [Validator] RDF_SYNTAX_ERROR.")
+        message = "❌ [Validator] RDF_SYNTAX_ERROR."
+        print(message)
+        append_run_log(message, state['file_name'])
         return {"shacl_validation_status": "RDF_SYNTAX_ERROR", 
                 "shacl_validation_retries": state.get("shacl_validation_retries", 0) + 1,
                 "messages": [HumanMessage(content=f"RDF Syntax Error found. Fix it and output the full corrected Turtle code again. Error details: \n\n {error_msg}.")]}
@@ -297,8 +340,10 @@ def shacl_validator_node(state: AgentState):
                 collected_errors.append(f"Shape: {shape_name}. Error details: {msg}.")
 
     except Exception as e:
-        error_msg = str(e)       
-        print("❌ [Validator] QUERY_EXTRACTION_ERROR.")
+        error_msg = str(e)
+        message = "❌ [Validator] QUERY_EXTRACTION_ERROR."
+        print(message)
+        append_run_log(message, state['file_name'])
         return {"shacl_validation_status": "QUERY_EXTRACTION_ERROR", 
                 "shacl_validation_retries": state.get("shacl_validation_retries", 0) + 1,
                 "messages": [HumanMessage(content=f"Error found while extracting SPARQL queries. Error details: \n\n {error_msg}.")]}
@@ -306,7 +351,9 @@ def shacl_validator_node(state: AgentState):
     if collected_errors:
         n_errors = len(collected_errors)
         full_report = " \n\n ".join(collected_errors)
-        print("❌ [Validator] SPARQL_SYNTAX_ERROR.")
+        message = "❌ [Validator] SPARQL_SYNTAX_ERROR."
+        print(message)
+        append_run_log(message, state['file_name'])
         return {"shacl_validation_status": "SPARQL_SYNTAX_ERROR", 
                 "shacl_validation_retries": state.get("shacl_validation_retries", 0) + 1,
                 "messages": [HumanMessage(content=f"{n_errors} SPARQL syntax error(s) found. Fix them and output the full corrected Turtle code again. Full report: \n\n {full_report}.")]}
@@ -340,8 +387,8 @@ def shacl_validator_node(state: AgentState):
             data_graph=mutated_graph,
             shacl_graph=shacl_graph,    
             inference='rdfs',
-        )
-        
+        )       
+                
         # Parse the validation report
         parse_result = parse_validation_report(conforms, results_graph, results_text, shacl_graph)
         actual_violation_count = parse_result["violation_count"]
@@ -354,19 +401,28 @@ def shacl_validator_node(state: AgentState):
     if collected_errors:
         n_errors = len(collected_errors)
         full_report = " \n\n ".join(collected_errors)
-        print("❌ [Validator] LOGIC_VALIDATION_ERROR.")
+        message = "❌ [Validator] LOGIC_VALIDATION_ERROR."
+        print(message)
+        append_run_log(message, state['file_name'])
         return {"shacl_validation_status": "LOGIC_VALIDATION_ERROR", 
                 "shacl_validation_retries": state.get("shacl_validation_retries", 0) + 1,
                 "messages": [HumanMessage(content=f"{n_errors} logic error(s) found. Fix them and output the full corrected Turtle code again. Full report: \n\n {full_report}.")]}
     
-    print("✅ [Validator] No errors found.")
+    message = "✅ [Validator] No errors found."
+    print(message)
+    append_run_log(message, state['file_name'])
     return {"shacl_validation_status": "Valid"} 
 
 def shacl_valid_condition(state: AgentState) -> str:
-    """Check if the SHACL shapes are valid by looking at the validation status."""
+    """Check if the SHACL shapes are valid by looking at the validation status. Exit if maximum retries reached."""
     status = state.get("shacl_validation_status", "Unknown")
     if status == "Valid":
         return "Valid"
+    elif state.get("shacl_validation_retries", 0) >= 7:
+        message = "❌ Maximum retries reached. Exiting."
+        print(message)
+        append_run_log(message, state['file_name'])
+        return "Max Retries Reached"
     else:
         return "Error"
 
@@ -379,7 +435,9 @@ def artifact_logger_node(state: AgentState):
     
     artifact_path = "Testing_Artifacts_Test"
     file_name = state["file_name"]
-    print(f"💾 [Artifact Logger] Saving Artifacts to {artifact_path}")    
+    message = f"💾 [Artifact Logger] Saving Artifacts to {artifact_path}"
+    print(message)
+    append_run_log(message, file_name)
 
     preconditions_path = f"{artifact_path}/{file_name}_preconditions.txt"    
     with open(preconditions_path, "w", encoding="utf-8") as f:
@@ -402,13 +460,19 @@ def artifact_logger_node(state: AgentState):
     with open(shacl_path, "w", encoding="utf-8") as f:
         f.write(state["shacl_shapes"])
 
-    print(f"   [Success] Artifacts saved to: {artifact_path}")
+    message = f"   [Success] Artifacts saved to: {artifact_path}"
+    print(message)
+    append_run_log(message, file_name)
     
 
 # ==========================================
 # THE GRAPH 
 # ==========================================
-print("\n--- Compiling LangGraph ---")
+setup_run_log(document)
+
+message = "\n--- Compiling LangGraph ---"
+print(message)
+append_run_log(message, document)
 workflow = StateGraph(AgentState)
 
 # Nodes
@@ -429,7 +493,7 @@ workflow.add_edge("Generate_Service_Graph", "Generate_Citizen_Service_Graph")
 workflow.add_edge("Generate_Citizen_Service_Graph", "Log_Artifacts")
 workflow.add_edge("Structure_JSON", "Generate_SHACL")
 workflow.add_edge("Generate_SHACL", "Validate_SHACL")
-workflow.add_conditional_edges("Validate_SHACL", shacl_valid_condition, {"Valid": "Log_Artifacts", "Error": "Generate_SHACL"})
+workflow.add_conditional_edges("Validate_SHACL", shacl_valid_condition, {"Valid": "Log_Artifacts", "Error": "Generate_SHACL", "Max Retries Reached": END})
 workflow.add_edge("Log_Artifacts", END)
 
 # Compile into an executable application
@@ -441,13 +505,18 @@ with open("langgraph_architecture.png", "wb") as f:
 # ==========================================
 # EXECUTE THE WORKFLOW
 # ==========================================
-print("\n--- Starting Execution ---")
-document = "student_housing"
-# document = "parental_leave"
-# document = "long_term_unemployment"
+message = "\n--- Starting Execution ---"
+print(message)
+append_run_log(message, document)
 initial_state = {"file_name": document,
                  "citizen_schema": read_txt(f"Citizens/{document} schema.ttl"),
                  "golden_citizen": read_txt(f"Citizens/{document} eligible.ttl"),
                  "mutation_scenarios": read_txt(f"Citizens/{document} scenarios.yaml")
                 }
-final_state = app.invoke(initial_state)
+try:
+    final_state = app.invoke(initial_state)
+except KeyboardInterrupt:
+    message = "⚠️ [Run] Keyboard interrupt captured. The run log is preserved on disk."
+    print(message)
+    append_run_log(message, document)
+    raise

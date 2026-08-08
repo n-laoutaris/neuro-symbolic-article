@@ -25,6 +25,11 @@ A single `.ttl` file containing `sh:NodeShape` definitions. DO NOT wrap the outp
     * All paths originate from the **Focus Node** (the `:Applicant`).
     * Use the related_paths in the JSON strictly as a dictionary to know which Ontology properties exist. DO NOT blindly chain them together. You must read the natural language desc to understand the true relational graph topology (e.g., realizing that multiple properties belong to the same Blank Node) and construct your SPARQL WHERE clauses based on the English logic, not the flat JSON arrays.
 
+3.5. **Empty Constraints:**
+    * If a Constraint object in the JSON Information Model has an empty `constrains` array (no InformationConcepts), this means the precondition could not be mapped to any property in the Domain Ontology.
+    * Do NOT generate a `sh:NodeShape` for this Constraint. Skip it entirely.
+    * Do NOT generate a stub shape with only `sh:targetClass` and an explanatory `sh:message` — such a shape has no constraint component and will cause the validation engine to fail.
+
 4.  **Logic Strategy (Property vs. SPARQL):**
     * **Strategy A: Simple Property Shapes**
         * Use ONLY if there is exactly **one** concept with **one** path, and the logic is a simple check (e.g., `minCount`, `minInclusive`, `hasValue`).

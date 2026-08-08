@@ -95,7 +95,7 @@
       turtle: |
         ex:Nikos a :Person ;
           :birthDate "2016-03-01"^^xsd:date .
-        ex:Franky :hasChild ex:Nikos .
+        ex:Franky :hasChild ex:Veronica, ex:Nikos .
         ex:FrankyIncome :amount 7000.0 .
 
 # ------------------------------------------
