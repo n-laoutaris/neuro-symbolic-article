@@ -22,18 +22,11 @@ from src.graph_utils import visualize_graph, resolve_node_path
 from src.testing_utils import apply_mutations, parse_validation_report
 
 load_dotenv()
-# llm = ChatGoogleGenerativeAI(
-#     model = "gemini-3.1-flash-lite",
-#     thinking_level = "minimal",
-#     include_thoughts = True,
-#     temperature = 0,
-#     max_retries = 2
-# )    
 
 llm = ChatOpenAI(
     model="gpt-5.6-terra",
     temperature = 0,
-    reasoning_effort = "low", 
+    reasoning_effort = "medium", 
     max_retries = 2
 )
 
@@ -231,9 +224,12 @@ def shacl_generator_node(state: AgentState):
     # Reminder: state messages only carry the conversation history after the system prompt and human context. So we append them at the end of the conversation start.
     
     if state.get("shacl_validation_retries", 0) >= 2:
-        print("⚠️ 2 SHACL generation retries reached. Enabling Gemini 'low' thinking mode.")
-        #   TODO: Implement escalation here.
-        active_llm = llm
+        print("⚠️ Escalating. High thinking mode active.")
+        active_llm = ChatOpenAI(
+            model="gpt-5.6-terra",
+            temperature = 0,
+            reasoning_effort = "high", 
+            max_retries = 2)
     else:
         active_llm = llm
     
@@ -329,7 +325,6 @@ def shacl_validator_node(state: AgentState):
     shacl_graph.bind("", Namespace("http://example.org/schema#"))
 
     # Load the Scenarios from YAML
-    # with open(f"Citizens/{state['file_name']} scenarios.yaml", "r") as f:
     scenarios = yaml.safe_load(state["mutation_scenarios"])
 
     # Iterate through each scenario
@@ -449,10 +444,10 @@ with open("langgraph_architecture.png", "wb") as f:
 print("\n--- Starting Execution ---")
 document = "student_housing"
 # document = "parental_leave"
+# document = "long_term_unemployment"
 initial_state = {"file_name": document,
                  "citizen_schema": read_txt(f"Citizens/{document} schema.ttl"),
                  "golden_citizen": read_txt(f"Citizens/{document} eligible.ttl"),
                  "mutation_scenarios": read_txt(f"Citizens/{document} scenarios.yaml")
                 }
 final_state = app.invoke(initial_state)
-

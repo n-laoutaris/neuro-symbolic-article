@@ -1,7 +1,7 @@
 [
   {
     "name": "working_parent_or_parental_responsibility_condition",
-    "desc": "The applicant must be a working parent or a person exercising parental responsibility, including a biological, adoptive, foster, or presumed mother under Article 1464 of the Civil Code who has a child through surrogacy.",
+    "desc": "The applicant must be a working parent or a person exercising parental responsibility, including a biological parent, adoptive parent, foster parent, or a presumed mother under Article 1464 of the Civil Code who has a child through surrogacy.",
     "constrains": [
       {
         "name": "child",
@@ -29,8 +29,8 @@
     ]
   },
   {
-    "name": "child_age_limit_condition",
-    "desc": "The child must not have reached eight (8) years of age.",
+    "name": "child_age_condition",
+    "desc": "The child must be under eight (8) years of age.",
     "constrains": [
       {
         "name": "child_birth_date",
@@ -48,7 +48,7 @@
   },
   {
     "name": "eligible_employment_relationship_condition",
-    "desc": "The applicant must be employed either under a dependent-employment relationship or under a paid mandate, in the private or public sector. In the public sector, only employees governed by labour legislation are eligible for the DYPA benefit.",
+    "desc": "The applicant must be employed either under a dependent-employment relationship or under a paid mandate, in the private or public sector. In the public sector, only employees subject to labour legislation are eligible for the benefit from the Public Employment Service (DYPA).",
     "constrains": [
       {
         "name": "active_employment_status",
@@ -78,7 +78,7 @@
   },
   {
     "name": "one_year_same_employer_condition",
-    "desc": "The applicant must have completed one (1) year of employment with the same employer, either continuously or through successive fixed-term employment contracts, unless more favourable terms are provided by specific legislation, decrees, regulations, collective labour agreements, arbitration awards, or oral or written employer–employee agreements.",
+    "desc": "The applicant must have completed one (1) year of employment with the same employer, either continuously or under successive fixed-term employment contracts, unless more favourable terms are provided by specific legislation, decrees, regulations, collective labour agreements, arbitration awards, or oral or written agreements between employers and employees.",
     "constrains": [
       {
         "name": "employment_start_date",
@@ -107,18 +107,18 @@
     ]
   },
   {
-    "name": "employer_e14_declaration_upload_condition",
-    "desc": "The employer must upload the parental-leave grant declaration (Form E.14) to the ERGANI Information System.",
-    "constrains": []
-  },
-  {
-    "name": "dypa_registration_condition",
-    "desc": "If not already registered, the insured person must register in DYPA’s Register of Natural Persons and obtain a DYPA Registration Number.",
+    "name": "parental_leave_grant_form_upload_condition",
+    "desc": "The employer must have uploaded the Parental Leave Grant Form (Form E.14) to the ERGANI Information System.",
     "constrains": []
   },
   {
     "name": "taxisnet_credentials_condition",
-    "desc": "For electronic submission, the applicant must hold TAXISnet credentials to access DYPA’s electronic services through certification by the Independent Authority for Public Revenue (AADE).",
+    "desc": "For electronic submission, the applicant must hold TAXISnet credentials to log in to DYPA’s electronic services through certification by the Independent Authority for Public Revenue (AADE).",
+    "constrains": []
+  },
+  {
+    "name": "dypa_registration_condition",
+    "desc": "The applicant must be registered in DYPA’s Register of Natural Persons and hold a DYPA Registration Number; if not already registered, registration must be completed electronically using TAXISnet credentials, with personal details verified by AADE.",
     "constrains": []
   }
 ]

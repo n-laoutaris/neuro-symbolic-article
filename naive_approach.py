@@ -7,7 +7,6 @@ from langchain_openai import ChatOpenAI
 from rdflib.plugins.sparql import prepareQuery
 from pyshacl import validate
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Import your custom tools exactly as they are in your main script
 from src.parsing_utils import read_txt
@@ -20,7 +19,7 @@ load_dotenv()
 llm = ChatOpenAI(
     model="gpt-5.6-terra",
     temperature = 0,
-    reasoning_effort = "low", 
+    reasoning_effort = "high", 
     max_retries = 2
 )
 
@@ -152,4 +151,4 @@ CRITICAL INSTRUCTIONS:
     print("==========================================\n")
 
 if __name__ == "__main__":
-    run_zero_shot_baseline("student_housing")
+    run_zero_shot_baseline("long_term_unemployment")

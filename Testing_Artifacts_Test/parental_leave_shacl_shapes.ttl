@@ -5,77 +5,100 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-ex:working_parent_or_parental_responsibility_shape
+:working_parent_or_parental_responsibility_shape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The applicant must be a working parent or a person exercising parental responsibility for a child." ;
+        sh:message "The applicant does not have both a child and an active employment record required for a working parent or person exercising parental responsibility." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
+
             SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
                     ?this :hasChild ?child .
-                }
-                FILTER NOT EXISTS {
                     ?this :hasEmployment ?employment .
                     ?employment :isActive true .
                 }
             }
-        """ ;
+        """
     ] .
 
-ex:child_age_limit_shape
+:child_age_shape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "A child of the applicant has reached eight years of age." ;
+        sh:message "A child linked to the applicant is eight years old or older, or does not have a recorded birth date." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
+
             SELECT ?this
             WHERE {
-                ?this :hasChild ?child .
-                ?child :birthDate ?birthDate .
-                FILTER ((YEAR(now()) - YEAR(?birthDate)) >= 8)
+                {
+                    ?this :hasChild ?child .
+                    FILTER NOT EXISTS {
+                        ?child :birthDate ?birthDate .
+                    }
+                }
+                UNION
+                {
+                    ?this :hasChild ?child .
+                    ?child :birthDate ?birthDate .
+                    FILTER ((YEAR(now()) - YEAR(?birthDate)) >= 8)
+                }
             }
-        """ ;
+        """
     ] .
 
-ex:eligible_employment_relationship_shape
+:eligible_employment_relationship_shape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The applicant does not have an active eligible employment relationship in the private or public sector." ;
+        sh:message "An active employment relationship is not in an eligible private or public employment sector." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
+
             SELECT ?this
             WHERE {
+                ?this :hasEmployment ?activeEmployment .
+                ?activeEmployment :isActive true .
+
                 FILTER NOT EXISTS {
-                    ?this :hasEmployment ?employment .
-                    ?employment :isActive true .
-                    ?employment :employmentSector ?sector .
+                    ?this :hasEmployment ?eligibleEmployment .
+                    ?eligibleEmployment :isActive true .
+                    ?eligibleEmployment :employmentSector ?sector .
                     FILTER (?sector IN ("Private", "Public"))
                 }
             }
-        """ ;
+        """
     ] .
 
-ex:one_year_same_employer_shape
+:one_year_same_employer_shape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "An active employment relationship has not completed at least one year of employment." ;
+        sh:message "An active employment record does not have a recorded start date at least twelve months ago." ;
         sh:select """
+            PREFIX : <http://example.org/schema#>
+
             SELECT ?this
             WHERE {
-                ?this :hasEmployment ?employment .
-                ?employment :isActive true .
-                ?employment :employmentStartDate ?startDate .
-                FILTER (
-                    ((YEAR(now()) * 12 + MONTH(now())) -
-                     (YEAR(?startDate) * 12 + MONTH(?startDate))) < 12
-                )
+                ?this :hasEmployment ?activeEmployment .
+                ?activeEmployment :isActive true .
+
+                FILTER NOT EXISTS {
+                    ?this :hasEmployment ?eligibleEmployment .
+                    ?eligibleEmployment :isActive true .
+                    ?eligibleEmployment :employmentStartDate ?startDate .
+                    FILTER (
+                        ((YEAR(now()) * 12 + MONTH(now())) -
+                         (YEAR(?startDate) * 12 + MONTH(?startDate))) >= 12
+                    )
+                }
             }
-        """ ;
+        """
     ] .

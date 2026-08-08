@@ -12,34 +12,31 @@ ex:Dimitris a ns1:Applicant,
     ns1:hasEmployment ex:DimitrisJob .
 
 ex:parental_leave a cpsv:PublicService ;
-    cpsv:holdsRequirement ex:child_age_limit_condition,
+    cpsv:holdsRequirement ex:child_age_condition,
         ex:dypa_registration_condition,
         ex:eligible_employment_relationship_condition,
-        ex:employer_e14_declaration_upload_condition,
         ex:one_year_same_employer_condition,
+        ex:parental_leave_grant_form_upload_condition,
         ex:taxisnet_credentials_condition,
         ex:working_parent_or_parental_responsibility_condition .
 
 ex:child a cccev:InformationConcept ;
     ex:mapsTo ex:Nikolas .
 
-ex:child_age_limit_condition a cccev:Constraint ;
+ex:child_age_condition a cccev:Constraint ;
     cccev:constrains ex:child_birth_date ;
-    dct:description "The child must not have reached eight (8) years of age." .
+    dct:description "The child must be under eight (8) years of age." .
 
 ex:child_birth_date a cccev:InformationConcept ;
     ex:mapsTo ex:Nikolas .
 
 ex:dypa_registration_condition a cccev:Constraint ;
-    dct:description "If not already registered, the insured person must register in DYPA’s Register of Natural Persons and obtain a DYPA Registration Number." .
+    dct:description "The applicant must be registered in DYPA’s Register of Natural Persons and hold a DYPA Registration Number; if not already registered, registration must be completed electronically using TAXISnet credentials, with personal details verified by AADE." .
 
 ex:eligible_employment_relationship_condition a cccev:Constraint ;
     cccev:constrains ex:active_employment_status,
         ex:employment_sector ;
-    dct:description "The applicant must be employed either under a dependent-employment relationship or under a paid mandate, in the private or public sector. In the public sector, only employees governed by labour legislation are eligible for the DYPA benefit." .
-
-ex:employer_e14_declaration_upload_condition a cccev:Constraint ;
-    dct:description "The employer must upload the parental-leave grant declaration (Form E.14) to the ERGANI Information System." .
+    dct:description "The applicant must be employed either under a dependent-employment relationship or under a paid mandate, in the private or public sector. In the public sector, only employees subject to labour legislation are eligible for the benefit from the Public Employment Service (DYPA)." .
 
 ex:employment_sector a cccev:InformationConcept ;
     ex:mapsTo ex:DimitrisJob .
@@ -50,15 +47,18 @@ ex:employment_start_date a cccev:InformationConcept ;
 ex:one_year_same_employer_condition a cccev:Constraint ;
     cccev:constrains ex:active_employment_status,
         ex:employment_start_date ;
-    dct:description "The applicant must have completed one (1) year of employment with the same employer, either continuously or through successive fixed-term employment contracts, unless more favourable terms are provided by specific legislation, decrees, regulations, collective labour agreements, arbitration awards, or oral or written employer–employee agreements." .
+    dct:description "The applicant must have completed one (1) year of employment with the same employer, either continuously or under successive fixed-term employment contracts, unless more favourable terms are provided by specific legislation, decrees, regulations, collective labour agreements, arbitration awards, or oral or written agreements between employers and employees." .
+
+ex:parental_leave_grant_form_upload_condition a cccev:Constraint ;
+    dct:description "The employer must have uploaded the Parental Leave Grant Form (Form E.14) to the ERGANI Information System." .
 
 ex:taxisnet_credentials_condition a cccev:Constraint ;
-    dct:description "For electronic submission, the applicant must hold TAXISnet credentials to access DYPA’s electronic services through certification by the Independent Authority for Public Revenue (AADE)." .
+    dct:description "For electronic submission, the applicant must hold TAXISnet credentials to log in to DYPA’s electronic services through certification by the Independent Authority for Public Revenue (AADE)." .
 
 ex:working_parent_or_parental_responsibility_condition a cccev:Constraint ;
     cccev:constrains ex:active_employment_status,
         ex:child ;
-    dct:description "The applicant must be a working parent or a person exercising parental responsibility, including a biological, adoptive, foster, or presumed mother under Article 1464 of the Civil Code who has a child through surrogacy." .
+    dct:description "The applicant must be a working parent or a person exercising parental responsibility, including a biological parent, adoptive parent, foster parent, or a presumed mother under Article 1464 of the Civil Code who has a child through surrogacy." .
 
 ex:Nikolas a ns1:Person ;
     ns1:birthDate "2022-03-10"^^xsd:date .

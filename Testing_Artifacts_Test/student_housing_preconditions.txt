@@ -1,37 +1,26 @@
-- The applicant must hold TAXISnet access credentials.
-
 - The student must be a Greek national or a national of another European Union Member State.
-
 - The student must hold a valid academic identity card.
-
-- The annual family income for the preceding year must not exceed €30,000, increased by €3,000 for each dependent child beyond the first.
-
-- The student must reside, because of their studies, in rented accommodation in a city other than their primary residence. Neither the student nor their parents may hold full ownership or usufruct rights over a dwelling in that city. The lease must be valid for at least six months.
-
-- The student’s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented dwellings exceeding a combined total of 200 square metres. Dwellings or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.
-
+- The student must live, for study purposes, in rented accommodation in a city other than that of their principal residence.
+  - Neither the student nor their parents may hold full ownership or usufruct rights over a residence in the city where the student rents accommodation.
+  - The lease must be valid for at least six months.
+- The annual family income for the preceding year must not exceed **€30,000**, increased by **€3,000 for each dependent child beyond the first**.
+- The student’s parents, or the student themself, must not own or hold usufruct rights over residences—whether owner-occupied or rented out—exceeding a total of **200 sq. m.**
+  - Residences or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.
 - The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested.
-
-- Where a parent is the beneficiary, the application must state the student’s tax identification number (AFM) and that of the parent on whom the student is dependent. The parent must have submitted an income tax return for the year in which the housing-allowance application is filed.
-
-- In the case of divorced or separated spouses, the beneficiary is the parent on whom the student is dependent.
-
+- Where a parent is the beneficiary:
+  - The student’s and the supporting parent’s Tax Identification Numbers (AFM) must be declared.
+  - If the parents are divorced or legally separated, the beneficiary is the parent who supports the student.
+  - The supporting parent must have submitted an income tax return for the year in which the housing-allowance application is made.
 - The student may exceptionally be the beneficiary if they:
-  - are orphaned by both parents;
-  - have parents who reside abroad;
+  - are orphaned of both parents; or
+  - have parents residing abroad; or
   - are over 25 years old; or
   - are required to submit an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013.
-  - In such cases, the student declares only their spouse’s tax identification number, if applicable.
-
-- Where the student’s parents reside abroad, the student must submit to the competent institution all documentation concerning both the student’s and the parents’—or the supporting parent’s—income and property situation in Greece and abroad. Foreign documents must be officially translated at the beneficiary’s responsibility.
-
-- For the enhanced allowance based on cohabitation, the cohabiting person must be another undergraduate student at a higher education institution who:
-  - is studying for a first degree;
-  - has not exceeded the prescribed period of study, measured by the semesters required for obtaining the degree under the study programme;
-  - does not hold another higher-education degree;
-  - studies in the same city or regional unit as the applicant; and
-  - is included as a tenant in the same lease arrangement.
-
-- For cohabitation, the tax identification number declared as tenant on behalf of the other student must match that of the cohabiting student, or the cohabiting student must be included as a dependent child in that person’s tax return.
-
-- Applications must be submitted within the prescribed period, normally from 1 to 30 June each year, unless a different deadline is set by a Ministry of Education circular.
+  - In this case, only the spouse’s AFM, if applicable, is declared.
+- To qualify for the enhanced allowance due to cohabitation, the cohabiting person must:
+  - be another undergraduate student at a higher education institution pursuing their first degree;
+  - not have exceeded the prescribed period of study, in semesters, required to obtain the degree under the programme of study;
+  - not already hold another higher-education degree;
+  - study in the same city or regional unit as the student for whom the allowance application is submitted;
+  - be named as the tenant, or be included as a dependent child in the tax return of the person named as tenant, under the AFM declared for the cohabiting student; and
+  - be included as a tenant in the lease submitted with the housing-allowance application.

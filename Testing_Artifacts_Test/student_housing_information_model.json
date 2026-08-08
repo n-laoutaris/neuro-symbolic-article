@@ -1,11 +1,6 @@
 [
   {
-    "name": "taxisnet_credentials_condition",
-    "desc": "The applicant must hold TAXISnet access credentials.",
-    "constrains": []
-  },
-  {
-    "name": "eu_or_greek_nationality_condition",
+    "name": "eligible_nationality_condition",
     "desc": "The student must be a Greek national or a national of another European Union Member State.",
     "constrains": [
       {
@@ -40,11 +35,121 @@
     ]
   },
   {
+    "name": "rented_accommodation_outside_principal_residence_condition",
+    "desc": "The student must live, for study purposes, in rented accommodation in a city other than that of their principal residence.",
+    "constrains": [
+      {
+        "name": "current_accommodation_type",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "residenceType"
+            ],
+            "datatype": "xsd:string"
+          }
+        ]
+      },
+      {
+        "name": "rented_accommodation_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "locatedIn"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "principal_residence_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasFamilyResidence",
+              "locatedIn"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "study_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasEducation",
+              "cityOfStudy"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "minimum_lease_duration_condition",
+    "desc": "The lease must be valid for at least six months.",
+    "constrains": [
+      {
+        "name": "rented_accommodation_lease_start_date",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "leaseStartDate"
+            ],
+            "datatype": "xsd:date"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "no_student_or_parent_residence_in_rental_city_condition",
+    "desc": "Neither the student nor their parents may hold full ownership or usufruct rights over a residence in the city where the student rents accommodation.",
+    "constrains": [
+      {
+        "name": "student_or_parent_property_location",
+        "related_paths": [
+          {
+            "path": [
+              "ownsRealEstate",
+              "propertyLocation"
+            ],
+            "datatype": "URI"
+          },
+          {
+            "path": [
+              "hasParent",
+              "ownsRealEstate",
+              "propertyLocation"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      },
+      {
+        "name": "rented_accommodation_city",
+        "related_paths": [
+          {
+            "path": [
+              "hasCurrentResidence",
+              "locatedIn"
+            ],
+            "datatype": "URI"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "family_income_threshold_condition",
     "desc": "The annual family income for the preceding year must not exceed €30,000, increased by €3,000 for each dependent child beyond the first.",
     "constrains": [
       {
-        "name": "preceding_year_family_income",
+        "name": "annual_family_income",
         "related_paths": [
           {
             "path": [
@@ -64,7 +169,7 @@
         ]
       },
       {
-        "name": "income_record_year",
+        "name": "family_income_year",
         "related_paths": [
           {
             "path": [
@@ -88,111 +193,33 @@
         "related_paths": [
           {
             "path": [
+              "hasParent",
               "hasChild",
               "isDependent"
             ],
             "datatype": "xsd:boolean"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "total_qualifying_residential_property_area_condition",
+    "desc": "The student’s parents, or the student themself, must not own or hold usufruct rights over residences—whether owner-occupied or rented out—exceeding a total of 200 sq. m. Residences or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.",
+    "constrains": [
+      {
+        "name": "student_or_parent_property_area",
+        "related_paths": [
+          {
+            "path": [
+              "ownsRealEstate",
+              "propertyAreaM2"
+            ],
+            "datatype": "xsd:decimal"
           },
           {
             "path": [
               "hasParent",
-              "hasChild",
-              "isDependent"
-            ],
-            "datatype": "xsd:boolean"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "rented_study_residence_and_city_property_condition",
-    "desc": "The student must reside, because of their studies, in rented accommodation in a city other than their primary residence. Neither the student nor their parents may hold full ownership or usufruct rights over a dwelling in that city. The lease must be valid for at least six months.",
-    "constrains": [
-      {
-        "name": "student_residence_type",
-        "related_paths": [
-          {
-            "path": [
-              "hasCurrentResidence",
-              "residenceType"
-            ],
-            "datatype": "xsd:string"
-          }
-        ]
-      },
-      {
-        "name": "student_rented_residence_city",
-        "related_paths": [
-          {
-            "path": [
-              "hasCurrentResidence",
-              "locatedIn"
-            ],
-            "datatype": "URI"
-          }
-        ]
-      },
-      {
-        "name": "primary_family_residence_city",
-        "related_paths": [
-          {
-            "path": [
-              "hasFamilyResidence",
-              "locatedIn"
-            ],
-            "datatype": "URI"
-          }
-        ]
-      },
-      {
-        "name": "lease_start_date",
-        "related_paths": [
-          {
-            "path": [
-              "hasCurrentResidence",
-              "leaseStartDate"
-            ],
-            "datatype": "xsd:date"
-          }
-        ]
-      },
-      {
-        "name": "student_owned_property_city",
-        "related_paths": [
-          {
-            "path": [
-              "ownsRealEstate",
-              "propertyLocation"
-            ],
-            "datatype": "URI"
-          }
-        ]
-      },
-      {
-        "name": "parent_owned_property_city",
-        "related_paths": [
-          {
-            "path": [
-              "hasParent",
-              "ownsRealEstate",
-              "propertyLocation"
-            ],
-            "datatype": "URI"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "combined_eligible_property_area_limit_condition",
-    "desc": "The student’s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented dwellings exceeding a combined total of 200 square metres. Dwellings or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.",
-    "constrains": [
-      {
-        "name": "student_property_area",
-        "related_paths": [
-          {
-            "path": [
               "ownsRealEstate",
               "propertyAreaM2"
             ],
@@ -201,20 +228,7 @@
         ]
       },
       {
-        "name": "parent_property_area",
-        "related_paths": [
-          {
-            "path": [
-              "hasParent",
-              "ownsRealEstate",
-              "propertyAreaM2"
-            ],
-            "datatype": "xsd:decimal"
-          }
-        ]
-      },
-      {
-        "name": "student_property_municipality_population",
+        "name": "student_or_parent_property_municipality_population",
         "related_paths": [
           {
             "path": [
@@ -223,12 +237,7 @@
               "municipalityPopulation"
             ],
             "datatype": "xsd:integer"
-          }
-        ]
-      },
-      {
-        "name": "parent_property_municipality_population",
-        "related_paths": [
+          },
           {
             "path": [
               "hasParent",
@@ -243,7 +252,7 @@
     ]
   },
   {
-    "name": "preceding_academic_year_course_completion_condition",
+    "name": "minimum_passed_courses_condition",
     "desc": "The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested.",
     "constrains": [
       {
@@ -273,18 +282,13 @@
     ]
   },
   {
-    "name": "parent_beneficiary_tax_identification_and_return_condition",
-    "desc": "Where a parent is the beneficiary, the application must state the student’s tax identification number (AFM) and that of the parent on whom the student is dependent. The parent must have submitted an income tax return for the year in which the housing-allowance application is filed.",
-    "constrains": []
-  },
-  {
-    "name": "divorced_or_separated_parent_beneficiary_condition",
-    "desc": "In the case of divorced or separated spouses, the beneficiary is the parent on whom the student is dependent.",
+    "name": "parent_beneficiary_requirements_condition",
+    "desc": "Where a parent is the beneficiary: the student’s and the supporting parent’s Tax Identification Numbers (AFM) must be declared; if the parents are divorced or legally separated, the beneficiary is the parent who supports the student; and the supporting parent must have submitted an income tax return for the year in which the housing-allowance application is made.",
     "constrains": []
   },
   {
     "name": "exceptional_student_beneficiary_condition",
-    "desc": "The student may exceptionally be the beneficiary if they are orphaned by both parents; have parents who reside abroad; are over 25 years old; or are required to submit an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In such cases, the student declares only their spouse’s tax identification number, if applicable.",
+    "desc": "The student may exceptionally be the beneficiary if they are orphaned of both parents; have parents residing abroad; are over 25 years old; or are required to submit an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In this case, only the spouse’s AFM, if applicable, is declared.",
     "constrains": [
       {
         "name": "student_birth_date",
@@ -298,7 +302,7 @@
         ]
       },
       {
-        "name": "student_dependency_status",
+        "name": "student_dependent_status",
         "related_paths": [
           {
             "path": [
@@ -311,23 +315,8 @@
     ]
   },
   {
-    "name": "parents_abroad_documentation_condition",
-    "desc": "Where the student’s parents reside abroad, the student must submit to the competent institution all documentation concerning both the student’s and the parents’—or the supporting parent’s—income and property situation in Greece and abroad. Foreign documents must be officially translated at the beneficiary’s responsibility.",
-    "constrains": []
-  },
-  {
-    "name": "cohabiting_student_eligibility_condition",
-    "desc": "For the enhanced allowance based on cohabitation, the cohabiting person must be another undergraduate student at a higher education institution who is studying for a first degree; has not exceeded the prescribed period of study; does not hold another higher-education degree; studies in the same city or regional unit as the applicant; and is included as a tenant in the same lease arrangement.",
-    "constrains": []
-  },
-  {
-    "name": "cohabitation_tax_identification_condition",
-    "desc": "For cohabitation, the tax identification number declared as tenant on behalf of the other student must match that of the cohabiting student, or the cohabiting student must be included as a dependent child in that person’s tax return.",
-    "constrains": []
-  },
-  {
-    "name": "application_submission_deadline_condition",
-    "desc": "Applications must be submitted within the prescribed period, normally from 1 to 30 June each year, unless a different deadline is set by a Ministry of Education circular.",
+    "name": "cohabitation_enhanced_allowance_condition",
+    "desc": "To qualify for the enhanced allowance due to cohabitation, the cohabiting person must be another undergraduate student at a higher education institution pursuing their first degree; not have exceeded the prescribed period of study; not already hold another higher-education degree; study in the same city or regional unit as the student; be named as the tenant, or be included as a dependent child in the tenant's tax return under the declared AFM; and be included as a tenant in the submitted lease.",
     "constrains": []
   }
 ]
