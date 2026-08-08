@@ -2,13 +2,11 @@ import operator
 from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langgraph.graph.message import AnyMessage
 from langchain_core.messages import SystemMessage
 from rdflib import Graph, BNode, SH, Namespace
 from rdflib.plugins.sparql import prepareQuery
-# import pyparsing
 import pypdf
 from dotenv import load_dotenv
 import json
@@ -37,8 +35,7 @@ llm = ChatOpenAI(
 # ==========================================
 # STATE
 # ==========================================
-# This defines the variables that get passed from node to node.
-# We use the built-in message state to track the conversation and tool calls
+
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
     file_name: str
@@ -242,6 +239,7 @@ def shacl_generator_node(state: AgentState):
     ] + state.get("messages", [])  # Include any messages from previous validation attempts
     # Reminder: state messages only carry the conversation history after the system prompt and human context. So we append them at the end of the conversation start.
     
+    # Escalation logic based on attempt count
     if attempt_count == 3:
         message = "⚠️ Escalating. Terra (high thinking mode) activated."
         print(message)
@@ -435,7 +433,7 @@ def artifact_logger_node(state: AgentState):
         # It's too early. One branch arrived before the other. Do nothing and exit.
         return
     
-    artifact_path = "Testing_Artifacts_Test"
+    artifact_path = "Testing_Artifacts"
     file_name = state["file_name"]
     message = f"💾 [Artifact Logger] Saving Artifacts to {artifact_path}"
     print(message)

@@ -8,16 +8,14 @@ from rdflib.plugins.sparql import prepareQuery
 from pyshacl import validate
 from langchain_core.messages import SystemMessage, HumanMessage
 
-# Import your custom tools exactly as they are in your main script
 from src.parsing_utils import read_txt
 from src.testing_utils import apply_mutations, parse_validation_report
 
 load_dotenv()
 
-
-# 1. Initialize the LLM (Giving the baseline a fair fight with High thinking)
+# Initialize the LLM (Giving the baseline a fair fight with a strong model and High thinking)
 llm = ChatOpenAI(
-    model="gpt-5.6-terra",
+    model="gpt-5.6-sol",
     temperature = 0,
     reasoning_effort = "high", 
     max_retries = 2
@@ -34,9 +32,9 @@ def extract_pdf_text(file_path: str) -> str:
     return "".join(text_content)
 
 def run_zero_shot_baseline(document_name: str):
-    print(f"\n🚀 Starting Zero-Shot Baseline Test for: {document_name}")
+    print(f"\nStarting Zero-Shot Baseline Test for: {document_name}")
 
-    # 2. Load your exact files
+    # Load files
     pdf_path = f"Precondition documents/{document_name}.pdf"
     schema_path = f"Citizens/{document_name} schema.ttl"
     golden_path = f"Citizens/{document_name} eligible.ttl"
@@ -45,7 +43,7 @@ def run_zero_shot_baseline(document_name: str):
     raw_greek_text = extract_pdf_text(pdf_path)
     citizen_schema = read_txt(schema_path)
 
-    # 3. Formulate the "One Big Prompt"
+    # Formulate one big prompt
     system_prompt = (
         "You are an expert in Semantic Web technologies, specifically RDF, SPARQL, and SHACL. "
         "Your task is to translate natural language legal documents into strict, executable graph logic."
@@ -69,7 +67,7 @@ CRITICAL INSTRUCTIONS:
 
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
 
-    # 4. Generate the SHACL in one shot
+    # Generate the SHACL in one shot
     print("🧠 Generating SHACL in one shot (Zero-Shot)...")
     response = llm.invoke(messages)
     shacl_output = response.text 
@@ -82,7 +80,7 @@ CRITICAL INSTRUCTIONS:
     print(f"✅ Baseline SHACL saved to {out_path}")
 
     # ==========================================
-    # 5. THE CRUCIBLE (Your exact Validator Logic)
+    # Validation Logic (same as in the original code)
     # ==========================================
     print("\n🧪 Validating against YAML Scenarios...")
     
@@ -136,7 +134,7 @@ CRITICAL INSTRUCTIONS:
         else:
             failed_scenarios.append(f"- {scenario_desc} (Expected {expected_count}, got {actual_count})")
 
-    # 6. Report the Carnage
+    # Report
     print("\n==========================================")
     print("📊 BASELINE ABLATION STUDY RESULTS")
     print("==========================================")
