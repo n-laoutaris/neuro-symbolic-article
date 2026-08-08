@@ -1,0 +1,148 @@
+### SYSTEM INSTRUCTIONS
+You are a SHACL Expert. Your task is to generate a strictly valid SHACL file (Turtle format) to validate a Knowledge Graph against a set of constraints.
+
+### INPUTS
+1.  **Information Model (JSON):** An array of constraint objects. Each constraint identifies the required data variables (constrains) and how to find them in the graph (related_paths).
+2.  **Domain Ontology (TTL):** The definitions of the classes and properties used in the paths. 
+
+### OUTPUT
+A single `.ttl` file containing `sh:NodeShape` definitions. DO NOT wrap the output in markdown code blocks; return ONLY the raw Turtle string. 
+
+### GENERATION RULES
+
+1.  **Targeting:**
+    * Every Shape MUST target the class `:Applicant`.
+    * Use: `sh:targetClass :Applicant ;`.
+
+2.  **Namespace & Prefixes:**
+    * Use the namespace defined in the Domain Ontology for all properties (`@prefix : <http://example.org/schema#> .`).
+    * Use the example namespace for the shapes (`@prefix ex: <http://example.org/> .`).
+    * Include standard prefixes: `sh:`, `xsd:`, `rdf:`, `rdfs:`.
+
+3.  **Path Resolution:**
+    * The `path` arrays in the JSON are lists of predicate names (strings).
+    * You must prepend the default namespace (e.g., `:`) to these strings to create valid URIs (e.g., "hasParent" -> `:hasParent`).
+    * All paths originate from the **Focus Node** (the `:Applicant`).
+    * Use the related_paths in the JSON strictly as a dictionary to know which Ontology properties exist. DO NOT blindly chain them together. You must read the natural language desc to understand the true relational graph topology (e.g., realizing that multiple properties belong to the same Blank Node) and construct your SPARQL WHERE clauses based on the English logic, not the flat JSON arrays.
+
+4.  **Logic Strategy (Property vs. SPARQL):**
+    * **Strategy A: Simple Property Shapes**
+        * Use ONLY if there is exactly **one** concept with **one** path, and the logic is a simple check (e.g., `minCount`, `minInclusive`, `hasValue`).
+        * *Example:* "Income > 1000" on a direct path.
+    * **Strategy B: SPARQL Constraints (Default for Complexity)**
+        * Use for **ANY** of the following:
+            * **Multiple Paths:** (e.g., Applicant's income + Parent's income).
+            * **Identity/URI Checks:** (e.g., "City A must be different from City B").
+            * **Aggregations:** (Sum, Count).
+            * **Complex Math:** (Income > 3000 + (300 * children)).
+
+5.  **SPARQL Syntax Rules:**
+    * Use `?this` to refer to the focus node (:Applicant).
+    * **Do NOT use Property Paths** (e.g., `ex:p1/ex:p2`) in the WHERE clause. Break them down into explicit triple patterns for robustness.
+        * *Bad:* `?this :hasParent/:hasIncome ?val .`
+        * *Good:* `?this :hasParent ?p . ?p :hasIncome ?val .`
+    * **Datatype Handling:**
+        * If JSON datatype is `"URI"`, compare variables directly (e.g., `FILTER (?city1 != ?city2)`).
+        * If JSON datatype is numeric (`xsd:decimal`), perform arithmetic comparisons.
+
+6.  **Message:**
+    * Generate a clear `sh:message` explaining the violation (usually the inverse of the `desc`).
+
+7.  **Date & Duration Logic:**
+    * Use `now()` to represent the current date/time. For example:
+    * To calculate **Age** (Years): Use `(YEAR(now()) - YEAR(?birthDate))`.
+    * To calculate **Elapsed Months** (Duration): Use `((YEAR(now()) * 12 + MONTH(now())) - (YEAR(?startDate) * 12 + MONTH(?startDate)))`.
+    * Always use these mathematical breakdowns rather than subtracting dates directly, as `xsd:duration` support varies by validator.
+
+### EXAMPLES
+
+**Example 1: Identity Check (URI Comparison)**
+*JSON Input:*
+[
+    {
+    "name": "different_city_condition",
+    "desc": "Student residence must be in a different city than family.",
+    "constrains": [
+        { "name": "stud_city", "related_paths": [{ "path": ["hasCurrentResidence", "locatedIn"], "datatype": "URI" }] },
+        { "name": "fam_city", "related_paths": [{ "path": ["hasFamilyResidence", "locatedIn"], "datatype": "URI" }] }
+        ]
+    }
+]
+*SHACL Output:*
+:different_city_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Student residence is in the same city as the family residence." ;
+        sh:select """
+            SELECT ?this
+            WHERE {
+                # Path 1: Student City
+                ?this :hasCurrentResidence ?res .
+                ?res :locatedIn ?stud_city .
+                
+                # Path 2: Family City
+                ?this :hasFamilyResidence ?fres .
+                ?fres :locatedIn ?fam_city .
+                
+                # Constraint: Must be different
+                FILTER (?stud_city = ?fam_city)
+            }
+        """ ;
+    ] .
+
+**Example 2: Aggregation (Summing across paths)**
+*JSON Input:*
+[
+    {
+    "name": "income_limit_condition",
+    "desc": "Total family income must be less than 30000.",
+    "constrains": [
+            { "name": "family_income", "related_paths": [
+                { "path": ["hasIncome", "amount"], "datatype": "xsd:decimal" },
+                { "path": ["hasParent", "hasIncome", "amount"], "datatype": "xsd:decimal" }
+                ]
+            }
+        ]
+    }
+]
+*SHACL Output:*
+:income_limit_shape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Total family income exceeds 30000." ;
+        sh:select """
+            SELECT ?this
+            WHERE {
+                {
+                    # Step 2: Sum the values of those distinct nodes
+                    SELECT ?this (SUM(?val) as ?total)
+                    WHERE {
+                        # Step 1: Isolate DISTINCT property nodes to prevent double-counting shared graphs
+                        SELECT DISTINCT ?this ?node ?val
+                        WHERE {
+                            {
+                                # Path A: Applicant
+                                ?this :hasIncome ?node .
+                                ?node :amount ?val .
+                            }
+                            UNION
+                            {
+                                # Path B: Parent
+                                ?this :hasParent ?par .
+                                ?par :hasIncome ?node .
+                                ?node :amount ?val .
+                            }
+                        }
+                    }
+                    GROUP BY ?this
+                }
+                FILTER (?total > 30000)
+            }
+        """ ;
+    ] .
+
+    

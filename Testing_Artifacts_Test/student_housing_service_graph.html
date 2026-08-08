@@ -1,0 +1,358 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1440px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "maroon", "id": "http://example.org/family_income_threshold_condition", "label": "family_income_threshold_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/income_record_year", "label": "income_record_year", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/preceding_academic_year_course_completion_condition", "label": "preceding_academic_year_course_completion_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/passed_courses_count", "label": "passed_courses_count", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/eu_or_greek_nationality_condition", "label": "eu_or_greek_nationality_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/student_citizenship_country", "label": "student_citizenship_country", "shape": "dot"}, {"color": "beige", "id": "The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested.", "label": "The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested.", "shape": "box"}, {"color": "maroon", "id": "http://example.org/divorced_or_separated_parent_beneficiary_condition", "label": "divorced_or_separated_parent_beneficiary_condition", "shape": "dot"}, {"color": "beige", "id": "In the case of divorced or separated spouses, the beneficiary is the parent on whom the student is dependent.", "label": "In the case of divorced or separated spouses, the beneficiary is the parent on whom the student is dependent.", "shape": "box"}, {"color": "gold", "id": "http://example.org/student_housing", "label": "student_housing", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/cohabiting_student_eligibility_condition", "label": "cohabiting_student_eligibility_condition", "shape": "dot"}, {"color": "beige", "id": "For the enhanced allowance based on cohabitation, the cohabiting person must be another undergraduate student at a higher education institution who is studying for a first degree; has not exceeded the prescribed period of study; does not hold another higher-education degree; studies in the same city or regional unit as the applicant; and is included as a tenant in the same lease arrangement.", "label": "For the enhanced allowance based on cohabitation, the cohabiting person must be another undergraduate student at a higher education institution who is studying for a first degree; has not exceeded the prescribed period of study; does not hold another higher-education degree; studies in the same city or regional unit as the applicant; and is included as a tenant in the same lease arrangement.", "shape": "box"}, {"color": "maroon", "id": "http://example.org/exceptional_student_beneficiary_condition", "label": "exceptional_student_beneficiary_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/student_dependency_status", "label": "student_dependency_status", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/combined_eligible_property_area_limit_condition", "label": "combined_eligible_property_area_limit_condition", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/parent_beneficiary_tax_identification_and_return_condition", "label": "parent_beneficiary_tax_identification_and_return_condition", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/parents_abroad_documentation_condition", "label": "parents_abroad_documentation_condition", "shape": "dot"}, {"color": "beige", "id": "The annual family income for the preceding year must not exceed \u20ac30,000, increased by \u20ac3,000 for each dependent child beyond the first.", "label": "The annual family income for the preceding year must not exceed \u20ac30,000, increased by \u20ac3,000 for each dependent child beyond the first.", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/preceding_year_family_income", "label": "preceding_year_family_income", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/cohabitation_tax_identification_condition", "label": "cohabitation_tax_identification_condition", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/valid_academic_identity_card_condition", "label": "valid_academic_identity_card_condition", "shape": "dot"}, {"color": "beige", "id": "The student must hold a valid academic identity card.", "label": "The student must hold a valid academic identity card.", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/student_property_municipality_population", "label": "student_property_municipality_population", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/student_property_area", "label": "student_property_area", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/parent_property_municipality_population", "label": "parent_property_municipality_population", "shape": "dot"}, {"color": "beige", "id": "Where the student\u2019s parents reside abroad, the student must submit to the competent institution all documentation concerning both the student\u2019s and the parents\u2019\u2014or the supporting parent\u2019s\u2014income and property situation in Greece and abroad. Foreign documents must be officially translated at the beneficiary\u2019s responsibility.", "label": "Where the student\u2019s parents reside abroad, the student must submit to the competent institution all documentation concerning both the student\u2019s and the parents\u2019\u2014or the supporting parent\u2019s\u2014income and property situation in Greece and abroad. Foreign documents must be officially translated at the beneficiary\u2019s responsibility.", "shape": "box"}, {"color": "maroon", "id": "http://example.org/rented_study_residence_and_city_property_condition", "label": "rented_study_residence_and_city_property_condition", "shape": "dot"}, {"color": "beige", "id": "The student\u2019s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented dwellings exceeding a combined total of 200 square metres. Dwellings or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.", "label": "The student\u2019s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented dwellings exceeding a combined total of 200 square metres. Dwellings or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation.", "shape": "box"}, {"color": "beige", "id": "The student may exceptionally be the beneficiary if they are orphaned by both parents; have parents who reside abroad; are over 25 years old; or are required to submit an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In such cases, the student declares only their spouse\u2019s tax identification number, if applicable.", "label": "The student may exceptionally be the beneficiary if they are orphaned by both parents; have parents who reside abroad; are over 25 years old; or are required to submit an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In such cases, the student declares only their spouse\u2019s tax identification number, if applicable.", "shape": "box"}, {"color": "maroon", "id": "http://example.org/application_submission_deadline_condition", "label": "application_submission_deadline_condition", "shape": "dot"}, {"color": "maroon", "id": "http://example.org/taxisnet_credentials_condition", "label": "taxisnet_credentials_condition", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/primary_family_residence_city", "label": "primary_family_residence_city", "shape": "dot"}, {"color": "beige", "id": "Where a parent is the beneficiary, the application must state the student\u2019s tax identification number (AFM) and that of the parent on whom the student is dependent. The parent must have submitted an income tax return for the year in which the housing-allowance application is filed.", "label": "Where a parent is the beneficiary, the application must state the student\u2019s tax identification number (AFM) and that of the parent on whom the student is dependent. The parent must have submitted an income tax return for the year in which the housing-allowance application is filed.", "shape": "box"}, {"color": "beige", "id": "The student must reside, because of their studies, in rented accommodation in a city other than their primary residence. Neither the student nor their parents may hold full ownership or usufruct rights over a dwelling in that city. The lease must be valid for at least six months.", "label": "The student must reside, because of their studies, in rented accommodation in a city other than their primary residence. Neither the student nor their parents may hold full ownership or usufruct rights over a dwelling in that city. The lease must be valid for at least six months.", "shape": "box"}, {"color": "beige", "id": "The student must be a Greek national or a national of another European Union Member State.", "label": "The student must be a Greek national or a national of another European Union Member State.", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/dependent_children", "label": "dependent_children", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/student_residence_type", "label": "student_residence_type", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/parent_owned_property_city", "label": "parent_owned_property_city", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/lease_start_date", "label": "lease_start_date", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/parent_property_area", "label": "parent_property_area", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/student_owned_property_city", "label": "student_owned_property_city", "shape": "dot"}, {"color": "beige", "id": "Applications must be submitted within the prescribed period, normally from 1 to 30 June each year, unless a different deadline is set by a Ministry of Education circular.", "label": "Applications must be submitted within the prescribed period, normally from 1 to 30 June each year, unless a different deadline is set by a Ministry of Education circular.", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/total_courses_count", "label": "total_courses_count", "shape": "dot"}, {"color": "beige", "id": "The applicant must hold TAXISnet access credentials.", "label": "The applicant must hold TAXISnet access credentials.", "shape": "box"}, {"color": "darkturquoise", "id": "http://example.org/student_birth_date", "label": "student_birth_date", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/academic_identity_card_validity", "label": "academic_identity_card_validity", "shape": "dot"}, {"color": "darkturquoise", "id": "http://example.org/student_rented_residence_city", "label": "student_rented_residence_city", "shape": "dot"}, {"color": "beige", "id": "For cohabitation, the tax identification number declared as tenant on behalf of the other student must match that of the cohabiting student, or the cohabiting student must be included as a dependent child in that person\u2019s tax return.", "label": "For cohabitation, the tax identification number declared as tenant on behalf of the other student must match that of the cohabiting student, or the cohabiting student must be included as a dependent child in that person\u2019s tax return.", "shape": "box"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "http://example.org/family_income_threshold_condition", "label": "constrains", "to": "http://example.org/income_record_year"}, {"arrows": "to", "from": "http://example.org/preceding_academic_year_course_completion_condition", "label": "constrains", "to": "http://example.org/passed_courses_count"}, {"arrows": "to", "from": "http://example.org/eu_or_greek_nationality_condition", "label": "constrains", "to": "http://example.org/student_citizenship_country"}, {"arrows": "to", "from": "http://example.org/preceding_academic_year_course_completion_condition", "label": "description", "to": "The student must have successfully passed examinations in at least half of the courses of the preceding academic year for which the allowance is requested."}, {"arrows": "to", "from": "http://example.org/divorced_or_separated_parent_beneficiary_condition", "label": "description", "to": "In the case of divorced or separated spouses, the beneficiary is the parent on whom the student is dependent."}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/divorced_or_separated_parent_beneficiary_condition"}, {"arrows": "to", "from": "http://example.org/cohabiting_student_eligibility_condition", "label": "description", "to": "For the enhanced allowance based on cohabitation, the cohabiting person must be another undergraduate student at a higher education institution who is studying for a first degree; has not exceeded the prescribed period of study; does not hold another higher-education degree; studies in the same city or regional unit as the applicant; and is included as a tenant in the same lease arrangement."}, {"arrows": "to", "from": "http://example.org/exceptional_student_beneficiary_condition", "label": "constrains", "to": "http://example.org/student_dependency_status"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/combined_eligible_property_area_limit_condition"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/parent_beneficiary_tax_identification_and_return_condition"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/parents_abroad_documentation_condition"}, {"arrows": "to", "from": "http://example.org/family_income_threshold_condition", "label": "description", "to": "The annual family income for the preceding year must not exceed \u20ac30,000, increased by \u20ac3,000 for each dependent child beyond the first."}, {"arrows": "to", "from": "http://example.org/family_income_threshold_condition", "label": "constrains", "to": "http://example.org/preceding_year_family_income"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/cohabitation_tax_identification_condition"}, {"arrows": "to", "from": "http://example.org/valid_academic_identity_card_condition", "label": "description", "to": "The student must hold a valid academic identity card."}, {"arrows": "to", "from": "http://example.org/combined_eligible_property_area_limit_condition", "label": "constrains", "to": "http://example.org/student_property_municipality_population"}, {"arrows": "to", "from": "http://example.org/combined_eligible_property_area_limit_condition", "label": "constrains", "to": "http://example.org/student_property_area"}, {"arrows": "to", "from": "http://example.org/combined_eligible_property_area_limit_condition", "label": "constrains", "to": "http://example.org/parent_property_municipality_population"}, {"arrows": "to", "from": "http://example.org/parents_abroad_documentation_condition", "label": "description", "to": "Where the student\u2019s parents reside abroad, the student must submit to the competent institution all documentation concerning both the student\u2019s and the parents\u2019\u2014or the supporting parent\u2019s\u2014income and property situation in Greece and abroad. Foreign documents must be officially translated at the beneficiary\u2019s responsibility."}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/rented_study_residence_and_city_property_condition"}, {"arrows": "to", "from": "http://example.org/combined_eligible_property_area_limit_condition", "label": "description", "to": "The student\u2019s parents, or the student themself, must not own or hold usufruct rights over owner-occupied or rented dwellings exceeding a combined total of 200 square metres. Dwellings or apartments located in a municipality or community with fewer than 3,000 inhabitants are excluded from this calculation."}, {"arrows": "to", "from": "http://example.org/exceptional_student_beneficiary_condition", "label": "description", "to": "The student may exceptionally be the beneficiary if they are orphaned by both parents; have parents who reside abroad; are over 25 years old; or are required to submit an income tax return and are not considered a dependent member under Article 11 of Law 4172/2013. In such cases, the student declares only their spouse\u2019s tax identification number, if applicable."}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/application_submission_deadline_condition"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/taxisnet_credentials_condition"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "constrains", "to": "http://example.org/primary_family_residence_city"}, {"arrows": "to", "from": "http://example.org/parent_beneficiary_tax_identification_and_return_condition", "label": "description", "to": "Where a parent is the beneficiary, the application must state the student\u2019s tax identification number (AFM) and that of the parent on whom the student is dependent. The parent must have submitted an income tax return for the year in which the housing-allowance application is filed."}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/eu_or_greek_nationality_condition"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/valid_academic_identity_card_condition"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/cohabiting_student_eligibility_condition"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "description", "to": "The student must reside, because of their studies, in rented accommodation in a city other than their primary residence. Neither the student nor their parents may hold full ownership or usufruct rights over a dwelling in that city. The lease must be valid for at least six months."}, {"arrows": "to", "from": "http://example.org/eu_or_greek_nationality_condition", "label": "description", "to": "The student must be a Greek national or a national of another European Union Member State."}, {"arrows": "to", "from": "http://example.org/family_income_threshold_condition", "label": "constrains", "to": "http://example.org/dependent_children"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/exceptional_student_beneficiary_condition"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "constrains", "to": "http://example.org/student_residence_type"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "constrains", "to": "http://example.org/parent_owned_property_city"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "constrains", "to": "http://example.org/lease_start_date"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/family_income_threshold_condition"}, {"arrows": "to", "from": "http://example.org/combined_eligible_property_area_limit_condition", "label": "constrains", "to": "http://example.org/parent_property_area"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "constrains", "to": "http://example.org/student_owned_property_city"}, {"arrows": "to", "from": "http://example.org/application_submission_deadline_condition", "label": "description", "to": "Applications must be submitted within the prescribed period, normally from 1 to 30 June each year, unless a different deadline is set by a Ministry of Education circular."}, {"arrows": "to", "from": "http://example.org/preceding_academic_year_course_completion_condition", "label": "constrains", "to": "http://example.org/total_courses_count"}, {"arrows": "to", "from": "http://example.org/taxisnet_credentials_condition", "label": "description", "to": "The applicant must hold TAXISnet access credentials."}, {"arrows": "to", "from": "http://example.org/exceptional_student_beneficiary_condition", "label": "constrains", "to": "http://example.org/student_birth_date"}, {"arrows": "to", "from": "http://example.org/student_housing", "label": "holdsRequirement", "to": "http://example.org/preceding_academic_year_course_completion_condition"}, {"arrows": "to", "from": "http://example.org/valid_academic_identity_card_condition", "label": "constrains", "to": "http://example.org/academic_identity_card_validity"}, {"arrows": "to", "from": "http://example.org/rented_study_residence_and_city_property_condition", "label": "constrains", "to": "http://example.org/student_rented_residence_city"}, {"arrows": "to", "from": "http://example.org/cohabitation_tax_identification_condition", "label": "description", "to": "For cohabitation, the tax identification number declared as tenant on behalf of the other student must match that of the cohabiting student, or the cohabiting student must be included as a dependent child in that person\u2019s tax return."}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
