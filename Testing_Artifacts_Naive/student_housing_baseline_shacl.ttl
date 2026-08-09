@@ -1,274 +1,402 @@
 @prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/shapes#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix sh: <http://www.w3.org/ns/shacl#> .
 
-[
+ex:ApplicantCoreShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
-
     sh:property [
         sh:path :citizenshipCountry ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
         sh:datatype xsd:string ;
-        sh:message "Ο φοιτητής πρέπει να διαθέτει δηλωμένη υπηκοότητα."
+        sh:in (
+            "AT" "BE" "BG" "HR" "CY" "CZ" "DK" "EE" "FI"
+            "FR" "DE" "GR" "HU" "IE" "IT" "LV" "LT" "LU"
+            "MT" "NL" "PL" "PT" "RO" "SK" "SI" "ES" "SE"
+        ) ;
+        sh:message "The applicant must be a citizen of Greece or another European Union country."
     ] ;
-
     sh:property [
         sh:path :hasCurrentResidence ;
         sh:minCount 1 ;
+        sh:maxCount 1 ;
         sh:class :Residence ;
-        sh:message "Ο φοιτητής πρέπει να διαθέτει δηλωμένη τρέχουσα κατοικία."
+        sh:message "The applicant must have exactly one current residence."
     ] ;
-
     sh:property [
         sh:path :hasFamilyResidence ;
         sh:minCount 1 ;
+        sh:maxCount 1 ;
         sh:class :Residence ;
-        sh:message "Ο φοιτητής πρέπει να διαθέτει δηλωμένη κύρια οικογενειακή κατοικία."
+        sh:message "The applicant must have exactly one family residence."
     ] ;
-
     sh:property [
         sh:path :hasEducation ;
         sh:minCount 1 ;
         sh:class :EducationRecord ;
-        sh:message "Ο φοιτητής πρέπει να διαθέτει δηλωμένα στοιχεία φοίτησης."
-    ] ;
+        sh:message "The applicant must have an education record."
+    ] .
 
+ex:AcademicEligibilityShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
     sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Ο φοιτητής πρέπει να είναι Έλληνας υπήκοος ή υπήκοος κράτους μέλους της Ευρωπαϊκής Ένωσης." ;
+        sh:message "The applicant must have a valid academic ID and must have passed at least half of the courses in the applicable education record." ;
         sh:select """
             PREFIX : <http://example.org/schema#>
-            SELECT $this
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
             WHERE {
-                $this :citizenshipCountry ?country .
-                FILTER (
-                    ?country NOT IN (
-                        "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE",
-                        "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV",
-                        "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK",
-                        "SI", "ES", "SE"
+                FILTER NOT EXISTS {
+                    ?this :hasEducation ?education .
+                    ?education a :EducationRecord .
+                    ?education :cityOfStudy ?studyCity .
+                    ?studyCity a :Municipality .
+                    ?education :hasValidAcademicID ?academicId .
+                    ?education :passedCoursesCount ?passed .
+                    ?education :totalCoursesCount ?total .
+                    FILTER (
+                        DATATYPE(?academicId) = xsd:boolean &&
+                        ?academicId = true &&
+                        DATATYPE(?passed) = xsd:integer &&
+                        DATATYPE(?total) = xsd:integer &&
+                        ?total > 0 &&
+                        (?passed * 2) >= ?total
                     )
+                }
+            }
+        """
+    ] .
+
+ex:ResidenceEligibilityShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        sh:message "The applicant's current residence must be rented and the lease must have started at least six months ago." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasCurrentResidence ?residence .
+                    ?residence :residenceType ?residenceType .
+                    ?residence :leaseStartDate ?leaseStart .
+                    FILTER (
+                        DATATYPE(?residenceType) = xsd:string &&
+                        ?residenceType = "Rented" &&
+                        DATATYPE(?leaseStart) = xsd:date &&
+                        (
+                            (12 * YEAR(NOW()) + MONTH(NOW())) -
+                            (12 * YEAR(?leaseStart) + MONTH(?leaseStart))
+                        ) >= 6
+                    )
+                }
+            }
+        """
+    ] ;
+    sh:sparql [
+        sh:message "The rented residence must be in the applicant's city of study, and that city must differ from the municipality of the family residence." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasCurrentResidence ?currentResidence .
+                    ?currentResidence :locatedIn ?studyCity .
+                    ?studyCity a :Municipality .
+
+                    ?this :hasFamilyResidence ?familyResidence .
+                    ?familyResidence :locatedIn ?familyCity .
+                    ?familyCity a :Municipality .
+
+                    ?this :hasEducation ?education .
+                    ?education :cityOfStudy ?studyCity .
+                    ?education :hasValidAcademicID ?academicId .
+                    ?education :passedCoursesCount ?passed .
+                    ?education :totalCoursesCount ?total .
+
+                    FILTER (
+                        ?studyCity != ?familyCity &&
+                        DATATYPE(?academicId) = xsd:boolean &&
+                        ?academicId = true &&
+                        DATATYPE(?passed) = xsd:integer &&
+                        DATATYPE(?total) = xsd:integer &&
+                        ?total > 0 &&
+                        (?passed * 2) >= ?total
+                    )
+                }
+            }
+        """
+    ] ;
+    sh:sparql [
+        sh:message "Neither the applicant nor a parent may own real estate in the municipality of the applicant's rented study residence." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            SELECT ?this
+            WHERE {
+                ?this :hasCurrentResidence ?currentResidence .
+                ?currentResidence :locatedIn ?currentCity .
+
+                {
+                    ?this :ownsRealEstate ?property .
+                }
+                UNION
+                {
+                    ?this :hasParent ?parent .
+                    ?parent :ownsRealEstate ?property .
+                }
+
+                ?property :propertyLocation ?currentCity .
+            }
+        """
+    ] .
+
+ex:IncomeDataShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        sh:message "At least one valid income record for the previous calendar year must be available for the applicant or a parent." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    {
+                        ?this :hasIncome ?incomeRecord .
+                    }
+                    UNION
+                    {
+                        ?this :hasParent ?incomeOwner .
+                        ?incomeOwner :hasIncome ?incomeRecord .
+                    }
+
+                    ?incomeRecord a :IncomeRecord .
+                    ?incomeRecord :incomeYear ?incomeYear .
+                    ?incomeRecord :amount ?incomeAmount .
+
+                    FILTER (
+                        DATATYPE(?incomeYear) = xsd:gYear &&
+                        SUBSTR(STR(?incomeYear), 1, 4) = STR(YEAR(NOW()) - 1) &&
+                        DATATYPE(?incomeAmount) = xsd:decimal
+                    )
+                }
+            }
+        """
+    ] ;
+    sh:sparql [
+        sh:message "Every income record identified for the previous calendar year must be an IncomeRecord with a decimal amount." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                {
+                    ?this :hasIncome ?incomeRecord .
+                }
+                UNION
+                {
+                    ?this :hasParent ?incomeOwner .
+                    ?incomeOwner :hasIncome ?incomeRecord .
+                }
+
+                ?incomeRecord :incomeYear ?incomeYear .
+
+                FILTER (
+                    DATATYPE(?incomeYear) = xsd:gYear &&
+                    SUBSTR(STR(?incomeYear), 1, 4) = STR(YEAR(NOW()) - 1)
+                )
+
+                FILTER (
+                    NOT EXISTS {
+                        ?incomeRecord a :IncomeRecord .
+                    }
+                    ||
+                    NOT EXISTS {
+                        ?incomeRecord :amount ?incomeAmount .
+                        FILTER (DATATYPE(?incomeAmount) = xsd:decimal)
+                    }
                 )
             }
         """
-    ] ;
+    ] .
 
+ex:FamilyIncomeLimitShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
     sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Ο φοιτητής πρέπει να διαθέτει ακαδημαϊκή ταυτότητα σε ισχύ και να έχει εξεταστεί επιτυχώς τουλάχιστον στα μισά μαθήματα." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            SELECT $this
-            WHERE {
-                FILTER NOT EXISTS {
-                    $this :hasEducation ?education .
-                    ?education :hasValidAcademicID true ;
-                               :passedCoursesCount ?passed ;
-                               :totalCoursesCount ?total .
-                    FILTER (?total > 0)
-                    FILTER ((2 * ?passed) >= ?total)
-                }
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Η κατοικία του φοιτητή πρέπει να είναι μισθωμένη, να βρίσκεται στην πόλη σπουδών και να είναι διαφορετική από την κύρια οικογενειακή κατοικία." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            SELECT $this
-            WHERE {
-                FILTER NOT EXISTS {
-                    $this :hasCurrentResidence ?currentResidence ;
-                          :hasFamilyResidence ?familyResidence ;
-                          :hasEducation ?education .
-
-                    ?currentResidence :residenceType "Rented" ;
-                                      :locatedIn ?currentMunicipality .
-
-                    ?familyResidence :locatedIn ?familyMunicipality .
-
-                    ?education :cityOfStudy ?studyMunicipality .
-
-                    FILTER (?currentMunicipality = ?studyMunicipality)
-                    FILTER (?currentMunicipality != ?familyMunicipality)
-                }
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Η μίσθωση της κατοικίας πρέπει να είναι σε ισχύ τουλάχιστον έξι μήνες." ;
+        sh:message "The previous year's family income must not exceed 30000 euros plus 3000 euros for each dependent child beyond the first." ;
         sh:select """
             PREFIX : <http://example.org/schema#>
             PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-            SELECT $this
-            WHERE {
-                FILTER NOT EXISTS {
-                    $this :hasCurrentResidence ?residence .
-                    ?residence :residenceType "Rented" ;
-                               :leaseStartDate ?leaseStartDate .
-                    FILTER (
-                        xsd:dateTime(?leaseStartDate) <=
-                        (NOW() - "P6M"^^xsd:yearMonthDuration)
-                    )
-                }
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Ο φοιτητής ή οι γονείς του δεν επιτρέπεται να διαθέτουν κατοικία στην πόλη σπουδών." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            SELECT DISTINCT $this
-            WHERE {
-                $this :hasEducation ?education .
-                ?education :cityOfStudy ?studyMunicipality .
-
-                {
-                    $this :ownsRealEstate ?property .
-                }
-                UNION
-                {
-                    $this :hasParent ?parent .
-                    ?parent :ownsRealEstate ?property .
-                }
-
-                ?property :propertyLocation ?studyMunicipality .
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Κάθε δηλωμένο ακίνητο πρέπει να διαθέτει εμβαδόν, τοποθεσία και πληθυσμό δήμου, ώστε να μπορεί να υπολογισθεί το όριο ακίνητης περιουσίας." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            SELECT DISTINCT $this
+            SELECT ?this
             WHERE {
                 {
-                    $this :ownsRealEstate ?property .
-                }
-                UNION
-                {
-                    $this :hasParent ?parent .
-                    ?parent :ownsRealEstate ?property .
-                }
-
-                FILTER NOT EXISTS { ?property :propertyAreaM2 ?area }
-                UNION
-                {
-                    FILTER NOT EXISTS {
-                        ?property :propertyLocation ?municipality .
-                        ?municipality :municipalityPopulation ?population .
-                    }
-                }
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Το συνολικό εμβαδόν κατοικιών του φοιτητή και των γονέων του, εξαιρουμένων κατοικιών σε δήμους με πληθυσμό κάτω των 3.000 κατοίκων, δεν μπορεί να υπερβαίνει τα 200 τ.μ." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            SELECT $this
-            WHERE {
-                {
-                    SELECT $this (SUM(?area) AS ?totalArea)
+                    SELECT ?this (SUM(?incomeAmount) AS ?familyIncome)
                     WHERE {
                         {
-                            $this :ownsRealEstate ?property .
-                        }
-                        UNION
-                        {
-                            $this :hasParent ?parent .
-                            ?parent :ownsRealEstate ?property .
-                        }
+                            SELECT DISTINCT ?this ?incomeRecord ?incomeAmount
+                            WHERE {
+                                ?this a :Applicant .
 
-                        ?property :propertyAreaM2 ?area ;
-                                  :propertyLocation ?municipality .
-                        ?municipality :municipalityPopulation ?population .
-                        FILTER (?population >= 3000)
+                                {
+                                    ?this :hasIncome ?incomeRecord .
+                                }
+                                UNION
+                                {
+                                    ?this :hasParent ?incomeOwner .
+                                    ?incomeOwner :hasIncome ?incomeRecord .
+                                }
+
+                                ?incomeRecord a :IncomeRecord .
+                                ?incomeRecord :incomeYear ?incomeYear .
+                                ?incomeRecord :amount ?incomeAmount .
+
+                                FILTER (
+                                    DATATYPE(?incomeYear) = xsd:gYear &&
+                                    SUBSTR(STR(?incomeYear), 1, 4) = STR(YEAR(NOW()) - 1) &&
+                                    DATATYPE(?incomeAmount) = xsd:decimal
+                                )
+                            }
+                        }
                     }
-                    GROUP BY $this
+                    GROUP BY ?this
                 }
-                FILTER (?totalArea > 200)
-            }
-        """
-    ] ;
 
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Πρέπει να υπάρχει δηλωμένο εισόδημα για το προηγούμενο ημερολογιακό έτος." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-            SELECT $this
-            WHERE {
-                FILTER NOT EXISTS {
-                    $this :hasIncome ?income .
-                    ?income :incomeYear ?year ;
-                            :amount ?amount .
-                    FILTER (xsd:integer(STR(?year)) = (YEAR(NOW()) - 1))
-                }
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "Το ετήσιο οικογενειακό εισόδημα του προηγούμενου έτους δεν μπορεί να υπερβαίνει τις 30.000 ευρώ, προσαυξανόμενο κατά 3.000 ευρώ για κάθε εξαρτώμενο τέκνο πέραν του ενός." ;
-        sh:select """
-            PREFIX : <http://example.org/schema#>
-            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-            SELECT $this
-            WHERE {
                 {
-                    SELECT $this
-                           (SUM(?incomeAmount) AS ?familyIncome)
-                           (COUNT(DISTINCT ?dependentChild) AS ?dependentChildren)
+                    SELECT ?this (COUNT(DISTINCT ?dependentChild) AS ?dependentChildren)
                     WHERE {
-                        {
-                            $this :hasIncome ?income .
-                            ?income :incomeYear ?incomeYear ;
-                                    :amount ?incomeAmount .
-                            FILTER (xsd:integer(STR(?incomeYear)) = (YEAR(NOW()) - 1))
-                        }
-                        UNION
-                        {
-                            $this :hasParent ?parent .
-                            ?parent :hasIncome ?income .
-                            ?income :incomeYear ?incomeYear ;
-                                    :amount ?incomeAmount .
-                            FILTER (xsd:integer(STR(?incomeYear)) = (YEAR(NOW()) - 1))
-                        }
-
+                        ?this a :Applicant .
                         OPTIONAL {
-                            $this :hasParent ?parentForChild .
-                            ?parentForChild :hasChild ?dependentChild .
-                            ?dependentChild :isDependent true .
+                            {
+                                ?this :hasChild ?dependentChild .
+                            }
+                            UNION
+                            {
+                                ?this :hasParent ?parent .
+                                ?parent :hasChild ?dependentChild .
+                            }
+
+                            ?dependentChild :isDependent ?dependentStatus .
+                            FILTER (
+                                DATATYPE(?dependentStatus) = xsd:boolean &&
+                                ?dependentStatus = true
+                            )
                         }
                     }
-                    GROUP BY $this
+                    GROUP BY ?this
                 }
 
                 BIND(
-                    30000 +
-                    (IF(?dependentChildren > 1, ?dependentChildren - 1, 0) * 3000)
+                    IF(
+                        ?dependentChildren > 1,
+                        ?dependentChildren - 1,
+                        0
+                    )
+                    AS ?additionalDependentChildren
+                )
+
+                BIND(
+                    30000 + (3000 * ?additionalDependentChildren)
                     AS ?incomeLimit
                 )
 
                 FILTER (?familyIncome > ?incomeLimit)
             }
         """
-    ]
-] .
+    ] .
+
+ex:RealEstateDataShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        sh:message "Every real estate property owned by the applicant or a parent must have a decimal area and a municipality with an integer population." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                {
+                    ?this :ownsRealEstate ?property .
+                }
+                UNION
+                {
+                    ?this :hasParent ?owner .
+                    ?owner :ownsRealEstate ?property .
+                }
+
+                FILTER (
+                    NOT EXISTS {
+                        ?property a :RealEstateProperty .
+                    }
+                    ||
+                    NOT EXISTS {
+                        ?property :propertyAreaM2 ?area .
+                        FILTER (DATATYPE(?area) = xsd:decimal)
+                    }
+                    ||
+                    NOT EXISTS {
+                        ?property :propertyLocation ?location .
+                        ?location a :Municipality .
+                        ?location :municipalityPopulation ?population .
+                        FILTER (DATATYPE(?population) = xsd:integer)
+                    }
+                )
+            }
+        """
+    ] .
+
+ex:RealEstateAreaLimitShape
+    a sh:NodeShape ;
+    sh:targetClass :Applicant ;
+    sh:sparql [
+        sh:message "The total area of real estate owned by the applicant and the applicant's parents must not exceed 200 square metres, excluding properties in municipalities with fewer than 3000 inhabitants." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                {
+                    SELECT ?this (SUM(?area) AS ?totalIncludedArea)
+                    WHERE {
+                        {
+                            SELECT DISTINCT ?this ?property ?area
+                            WHERE {
+                                ?this a :Applicant .
+
+                                {
+                                    ?this :ownsRealEstate ?property .
+                                }
+                                UNION
+                                {
+                                    ?this :hasParent ?owner .
+                                    ?owner :ownsRealEstate ?property .
+                                }
+
+                                ?property a :RealEstateProperty .
+                                ?property :propertyAreaM2 ?area .
+                                ?property :propertyLocation ?location .
+                                ?location a :Municipality .
+                                ?location :municipalityPopulation ?population .
+
+                                FILTER (
+                                    DATATYPE(?area) = xsd:decimal &&
+                                    DATATYPE(?population) = xsd:integer &&
+                                    ?population >= 3000
+                                )
+                            }
+                        }
+                    }
+                    GROUP BY ?this
+                }
+
+                FILTER (?totalIncludedArea > 200)
+            }
+        """
+    ] .

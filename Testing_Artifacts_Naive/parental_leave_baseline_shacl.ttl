@@ -1,86 +1,92 @@
 @prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/shapes#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-:ParentalLeaveAllowanceEligibilityShape
+ex:ApplicantEligibilityShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
-    rdfs:comment """
-        Validates the eligibility conditions that can be represented using the
-        supplied ontology schema. The supplied schema contains no properties
-        for TAXISnet credentials, DYPA registration number, employer Form E.14,
-        parental-care status, employment relationship type, public-sector
-        labour-law coverage, leave duration, multiple births, single-parent
-        status, or statutory exceptions to the one-year employment condition.
-    """ ;
-
-    sh:property [
-        a sh:PropertyShape ;
-        sh:path :hasChild ;
-        sh:minCount 1 ;
-        sh:nodeKind sh:IRI ;
-        sh:class :Person ;
-        sh:message "Ο αιτών πρέπει να συνδέεται με τουλάχιστον ένα τέκνο ή πρόσωπο για το οποίο ασκεί γονική μέριμνα."
-    ] ;
-
-    sh:property [
-        a sh:PropertyShape ;
-        sh:path :hasEmployment ;
-        sh:minCount 1 ;
-        sh:nodeKind sh:IRI ;
-        sh:class :EmploymentRecord ;
-        sh:message "Ο αιτών πρέπει να διαθέτει τουλάχιστον μία εγγραφή απασχόλησης."
-    ] ;
-
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "Δεν υπάρχει τέκνο που να μην έχει συμπληρώσει το όγδοο έτος της ηλικίας του." ;
+        sh:message "The applicant must have at least one child who has not reached eight years of age." ;
         sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+            SELECT DISTINCT ?this
             WHERE {
                 FILTER NOT EXISTS {
-                    $this :hasChild ?child .
+                    ?this :hasChild ?child .
                     ?child :birthDate ?birthDate .
 
-                    FILTER ( datatype(?birthDate) = xsd:date )
+                    FILTER(DATATYPE(?birthDate) = xsd:date)
 
                     BIND(
-                        xsd:date(
-                            NOW() - "P8Y"^^xsd:yearMonthDuration
-                        ) AS ?eighthBirthdayCutoff
+                        YEAR(NOW()) - YEAR(?birthDate) -
+                        IF(
+                            MONTH(NOW()) < MONTH(?birthDate) ||
+                            (
+                                MONTH(NOW()) = MONTH(?birthDate) &&
+                                DAY(NOW()) < DAY(?birthDate)
+                            ),
+                            1,
+                            0
+                        )
+                        AS ?childAge
                     )
 
-                    FILTER ( ?birthDate > ?eighthBirthdayCutoff )
+                    FILTER(?childAge >= 0 && ?childAge < 8)
                 }
             }
         """
     ] ;
-
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "Ο αιτών δεν διαθέτει ενεργή επιλέξιμη απασχόληση στον ιδιωτικό ή δημόσιο τομέα με τουλάχιστον ένα έτος υπηρεσίας στον ίδιο εργοδότη ή σε συνεχή/διαδοχική σειρά συμβάσεων." ;
+        sh:message "The applicant must have an active employment record in the private or public sector whose current employment or continuous contract series began at least one year ago." ;
         sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+            SELECT DISTINCT ?this
             WHERE {
                 FILTER NOT EXISTS {
-                    $this :hasEmployment ?employment .
+                    ?this :hasEmployment ?employment .
+                    ?employment :isActive ?active .
+                    ?employment :employmentSector ?sector .
+                    ?employment :employmentStartDate ?startDate .
 
-                    ?employment :isActive true ;
-                                :employmentSector ?sector ;
-                                :employmentStartDate ?startDate .
-
-                    FILTER ( datatype(?sector) = xsd:string )
-                    FILTER ( datatype(?startDate) = xsd:date )
-                    FILTER ( ?sector IN ( "Private"^^xsd:string, "Public"^^xsd:string ) )
-
-                    BIND(
-                        xsd:date(
-                            NOW() - "P1Y"^^xsd:yearMonthDuration
-                        ) AS ?oneYearCutoff
+                    FILTER(
+                        DATATYPE(?active) = xsd:boolean &&
+                        ?active = true
                     )
 
-                    FILTER ( ?startDate <= ?oneYearCutoff )
+                    FILTER(
+                        DATATYPE(?sector) = xsd:string &&
+                        (
+                            ?sector = "Private" ||
+                            ?sector = "Public"
+                        )
+                    )
+
+                    FILTER(DATATYPE(?startDate) = xsd:date)
+
+                    BIND(
+                        YEAR(NOW()) - YEAR(?startDate) -
+                        IF(
+                            MONTH(NOW()) < MONTH(?startDate) ||
+                            (
+                                MONTH(NOW()) = MONTH(?startDate) &&
+                                DAY(NOW()) < DAY(?startDate)
+                            ),
+                            1,
+                            0
+                        )
+                        AS ?completedEmploymentYears
+                    )
+
+                    FILTER(?completedEmploymentYears >= 1)
                 }
             }
         """

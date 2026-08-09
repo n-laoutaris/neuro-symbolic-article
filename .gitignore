@@ -16,3 +16,6 @@ venv/
 
 # OneDrive Specific Files
 ~$*
+
+Visualizations.ipynb
+temp/

@@ -2,13 +2,13 @@ import os
 from dotenv import load_dotenv
 import pypdf
 import yaml
-from rdflib import Graph, BNode, SH, Namespace
+from rdflib import Graph, Namespace
 from langchain_openai import ChatOpenAI
 from rdflib.plugins.sparql import prepareQuery
 from pyshacl import validate
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from src.parsing_utils import read_txt
+from src.parsing_utils import read_txt, setup_run_log, append_run_log
 from src.testing_utils import apply_mutations, parse_validation_report
 
 load_dotenv()
@@ -32,7 +32,12 @@ def extract_pdf_text(file_path: str) -> str:
     return "".join(text_content)
 
 def run_zero_shot_baseline(document_name: str):
-    print(f"\nStarting Zero-Shot Baseline Test for: {document_name}")
+    artifact_dir = "Testing_Artifacts_Naive"
+    setup_run_log(document_name, artifact_dir=artifact_dir)
+
+    message = f"\nStarting Zero-Shot Baseline Test for: {document_name}"
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
 
     # Load files
     pdf_path = f"Precondition documents/{document_name}.pdf"
@@ -40,56 +45,57 @@ def run_zero_shot_baseline(document_name: str):
     golden_path = f"Citizens/{document_name} eligible.ttl"
     yaml_path = f"Citizens/{document_name} scenarios.yaml"
 
+    message = f"📄 [Ingestion] Reading {pdf_path}..."
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
     raw_greek_text = extract_pdf_text(pdf_path)
+
     citizen_schema = read_txt(schema_path)
 
-    # Formulate one big prompt
+    # Load the one-pass SHACL generation prompt from disk
+    prompt_template = read_txt("Prompts/SHACL_generation_one_pass.txt")
+    human_prompt = prompt_template.replace("{raw_greek_text}", raw_greek_text)
+    human_prompt = human_prompt.replace("{citizen_schema}", citizen_schema)
+
+    # Keep the model role stable while the prompt itself carries the domain-specific instructions.
     system_prompt = (
         "You are an expert in Semantic Web technologies, specifically RDF, SPARQL, and SHACL. "
         "Your task is to translate natural language legal documents into strict, executable graph logic."
     )
-    
-    human_prompt = f"""
-Below is the official legal text outlining the eligibility requirements for a Greek public administration allowance. 
-Please read the text, identify all the eligibility criteria, and write a complete SHACL shapes graph that can validate whether an applicant is eligible. 
-
-CRITICAL INSTRUCTIONS:
-1. You MUST use the exact classes and properties defined in the provided Ontology Schema below. Do not invent your own URIs.
-2. You must express these rules using SHACL NodeShapes, PropertyShapes, and SPARQL-based constraints where necessary. 
-3. Output the final result in valid Turtle (.ttl) format. Output only the text of the ttl, nothing else.
-
---- LEGAL TEXT ---
-{raw_greek_text}
-
---- ONTOLOGY SCHEMA ---
-{citizen_schema}
-"""
 
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
 
     # Generate the SHACL in one shot
-    print("🧠 Generating SHACL in one shot (Zero-Shot)...")
+    message = "🧠 [Baseline Generator] Generating SHACL in one shot (Zero-Shot)..."
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
     response = llm.invoke(messages)
     shacl_output = response.text 
     
     # Save the output artifact
-    os.makedirs("Testing_Artifacts_Naive", exist_ok=True)
-    out_path = f"Testing_Artifacts_Naive/{document_name}_baseline_shacl.ttl"
+    os.makedirs(artifact_dir, exist_ok=True)
+    out_path = f"{artifact_dir}/{document_name}_baseline_shacl.ttl"
     with open(out_path, "w", encoding='utf-8') as f:
         f.write(shacl_output)
-    print(f"✅ Baseline SHACL saved to {out_path}")
+    message = f"✅ [Baseline] SHACL saved to {out_path}"
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
 
     # ==========================================
     # Validation Logic (same as in the original code)
     # ==========================================
-    print("\n🧪 Validating against YAML Scenarios...")
+    message = "\n🧪 [Validator] Validating against YAML Scenarios..."
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
     
     # Check RDF Syntax
     shacl_graph = Graph()
     try:
         shacl_graph.parse(data=shacl_output, format="turtle")
     except Exception as e:
-        print(f"💥 CRITICAL FAILURE: The LLM generated invalid Turtle syntax. Error: {e}")
+        message = f"💥 CRITICAL FAILURE: The LLM generated invalid Turtle syntax. Error: {e}"
+        print(message)
+        append_run_log(message, document_name, artifact_dir)
         return
 
     # Check SPARQL Syntax
@@ -99,7 +105,9 @@ CRITICAL INSTRUCTIONS:
         try:
             prepareQuery(str(row.sparql), initNs=namespaces)
         except Exception as e:
-            print(f"💥 CRITICAL FAILURE: SPARQL Syntax Error in generation: {e}")
+            message = f"💥 CRITICAL FAILURE: SPARQL Syntax Error in generation: {e}"
+            print(message)
+            append_run_log(message, document_name, artifact_dir)
             return
 
     # Load Golden Graph & YAML
@@ -113,9 +121,11 @@ CRITICAL INSTRUCTIONS:
     # Run the Mutations
     passed_scenarios = 0
     failed_scenarios = []
+    failed_scenario_ids = []
 
     for scn in scenarios:
         scenario_desc = scn['description']
+        scenario_id = scn.get('id', 'UNKNOWN')
         expected_count = scn['expected_violation_count']
         
         mutated_graph = apply_mutations(golden_graph, scn['actions'])
@@ -132,21 +142,36 @@ CRITICAL INSTRUCTIONS:
         if actual_count == expected_count:
             passed_scenarios += 1
         else:
+            failed_scenario_ids.append(scenario_id)
             failed_scenarios.append(f"- {scenario_desc} (Expected {expected_count}, got {actual_count})")
 
     # Report
-    print("\n==========================================")
-    print("📊 BASELINE ABLATION STUDY RESULTS")
-    print("==========================================")
-    print(f"Total Scenarios Tested: {len(scenarios)}")
-    print(f"Scenarios Passed: {passed_scenarios}")
-    print(f"Scenarios Failed: {len(failed_scenarios)}")
+
+    message = "📊 BASELINE ABLATION RESULTS"
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
     
-    if failed_scenarios:
-        print("\n❌ Failed Scenarios Breakdown:")
-        for fail in failed_scenarios:
-            print(fail)
-    print("==========================================\n")
+    message = f"Total Scenarios Tested: {len(scenarios)}"
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
+    message = f"Scenarios Passed: {passed_scenarios}"
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
+    message = f"Scenarios Failed: {len(failed_scenarios)}"
+    print(message)
+    append_run_log(message, document_name, artifact_dir)
+
+    if failed_scenario_ids:
+        message = f"❌ [Validator] LOGIC_VALIDATION_ERROR. ({len(failed_scenario_ids)} errors: {', '.join(failed_scenario_ids)})"
+        print(message)
+        append_run_log(message, document_name, artifact_dir)
+    else:
+        message = "✅ [Validator] No errors found."
+        print(message)
+        append_run_log(message, document_name, artifact_dir)
+
 
 if __name__ == "__main__":
+    run_zero_shot_baseline("parental_leave")
     run_zero_shot_baseline("long_term_unemployment")
+    run_zero_shot_baseline("student_housing")

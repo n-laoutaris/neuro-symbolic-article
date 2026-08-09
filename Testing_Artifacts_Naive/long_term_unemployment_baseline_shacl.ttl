@@ -1,63 +1,67 @@
 @prefix : <http://example.org/schema#> .
+@prefix ex: <http://example.org/shapes#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-:LongTermUnemploymentBenefitEligibilityShape
+ex:LongTermUnemploymentBenefitEligibilityShape
     a sh:NodeShape ;
     sh:targetClass :Applicant ;
-    sh:message "The applicant does not satisfy the eligibility requirements for the long-term unemployment benefit." ;
 
     sh:property [
-        a sh:PropertyShape ;
-        sh:path :birthDate ;
-        sh:minCount 1 ;
-        sh:maxCount 1 ;
-        sh:datatype xsd:date ;
-        sh:message "The applicant's birth date is required."
-    ] ;
-
-    sh:property [
-        a sh:PropertyShape ;
         sh:path :citizenshipCountry ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
         sh:datatype xsd:string ;
         sh:in (
-            "AT" "BE" "BG" "HR" "CY" "CZ" "DK" "EE" "FI" "FR"
-            "DE" "GR" "HU" "IE" "IT" "LV" "LT" "LU" "MT" "NL"
-            "PL" "PT" "RO" "SK" "SI" "ES" "SE"
+            "AT" "BE" "BG" "HR" "CY" "CZ" "DK" "EE" "FI"
+            "FR" "DE" "GR" "HU" "IE" "IT" "LV" "LT" "LU"
+            "MT" "NL" "PL" "PT" "RO" "SK" "SI" "ES" "SE"
         ) ;
-        sh:message "The applicant must be a Greek citizen or a citizen of an EU Member State."
+        sh:message "The applicant must have exactly one citizenship country corresponding to Greece or another European Union Member State." ;
     ] ;
 
     sh:property [
-        a sh:PropertyShape ;
-        sh:path :hasSpouse ;
+        sh:path :birthDate ;
+        sh:minCount 1 ;
         sh:maxCount 1 ;
-        sh:class :Person ;
-        sh:message "An applicant may have at most one spouse for household-income calculation."
+        sh:datatype xsd:date ;
+        sh:message "The applicant must have exactly one birth date represented as xsd:date." ;
     ] ;
 
     sh:property [
-        a sh:PropertyShape ;
         sh:path :hasChild ;
-        sh:class :Person ;
-        sh:message "Each child linked to the applicant must be a Person."
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [
+                sh:path :birthDate ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+                sh:datatype xsd:date ;
+                sh:message "Each linked child must have exactly one birth date represented as xsd:date so that minor-child status can be determined." ;
+            ] ;
+        ] ;
     ] ;
 
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The applicant must be aged from 20 through 66 years, inclusive, on the validation/application date." ;
+        sh:message "The applicant must be between 20 and 66 years old, inclusive, on the validation date." ;
         sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
             WHERE {
-                $this :birthDate ?birthDate .
-                BIND(NOW() AS ?now)
+                ?this :birthDate ?birthDate .
+                FILTER(datatype(?birthDate) = xsd:date)
                 BIND(
-                    YEAR(?now) - YEAR(?birthDate) -
+                    YEAR(NOW()) - YEAR(?birthDate) -
                     IF(
-                        MONTH(?now) < MONTH(?birthDate) ||
-                        (MONTH(?now) = MONTH(?birthDate) && DAY(?now) < DAY(?birthDate)),
+                        MONTH(NOW()) < MONTH(?birthDate) ||
+                        (
+                            MONTH(NOW()) = MONTH(?birthDate) &&
+                            DAY(NOW()) < DAY(?birthDate)
+                        ),
                         1,
                         0
                     )
@@ -65,207 +69,271 @@
                 )
                 FILTER(?age < 20 || ?age > 66)
             }
-        """
+        """ ;
     ] ;
 
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "A birth date is required for every child in order to determine whether the child is a minor." ;
+        sh:message "The applicant must remain currently registered as unemployed with DYPA." ;
         sh:select """
-            SELECT $this
-            WHERE {
-                $this :hasChild ?child .
-                FILTER NOT EXISTS { ?child :birthDate ?childBirthDate . }
-            }
-        """
-    ] ;
-
-    sh:sparql [
-        a sh:SPARQLConstraint ;
-        sh:message "The applicant must currently be registered as unemployed with DYPA under a continuous registration period of at least 12 completed months." ;
-        sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
-                    $this :hasUnemploymentRegistration ?registration .
-                    ?registration
-                        :registrationStartDate ?startDate ;
-                        :isCurrentlyRegistered true .
-
-                    BIND(NOW() AS ?now)
-                    BIND(
-                        (YEAR(?now) - YEAR(?startDate)) * 12 +
-                        (MONTH(?now) - MONTH(?startDate))
-                        AS ?monthDifference
-                    )
-
+                    ?this :hasUnemploymentRegistration ?registration .
+                    ?registration :isCurrentlyRegistered ?currentStatus .
                     FILTER(
-                        ?monthDifference > 12 ||
-                        (?monthDifference = 12 && DAY(?now) >= DAY(?startDate))
+                        datatype(?currentStatus) = xsd:boolean &&
+                        ?currentStatus = true
                     )
                 }
             }
-        """
+        """ ;
     ] ;
 
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The applicant must have exhausted a 12-month regular unemployment benefit entitlement and apply no later than two months after its completion." ;
+        sh:message "The applicant must have a current, uninterrupted unemployment registration lasting at least 12 completed months." ;
         sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
             WHERE {
                 FILTER NOT EXISTS {
-                    $this :hasRegularBenefitRecord ?benefitRecord .
-                    ?benefitRecord
-                        :regularBenefitStartDate ?benefitStartDate ;
-                        :regularBenefitMonthsPaid ?monthsPaid .
-
-                    FILTER(?monthsPaid >= 12)
-
-                    BIND(NOW() AS ?now)
-                    BIND(
-                        (YEAR(?now) - YEAR(?benefitStartDate)) * 12 +
-                        (MONTH(?now) - MONTH(?benefitStartDate))
-                        AS ?monthDifference
+                    ?this :hasUnemploymentRegistration ?registration .
+                    ?registration :isCurrentlyRegistered ?currentStatus .
+                    ?registration :registrationStartDate ?startDate .
+                    FILTER(
+                        datatype(?currentStatus) = xsd:boolean &&
+                        ?currentStatus = true
                     )
+                    FILTER(datatype(?startDate) = xsd:date)
+                    BIND(
+                        (
+                            (YEAR(NOW()) - YEAR(?startDate)) * 12 +
+                            (MONTH(NOW()) - MONTH(?startDate)) -
+                            IF(DAY(NOW()) < DAY(?startDate), 1, 0)
+                        )
+                        AS ?completedMonths
+                    )
+                    FILTER(?completedMonths >= 12)
+                }
+            }
+        """ ;
+    ] ;
 
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The applicant must have exhausted a 12-month regular unemployment benefit entitlement." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasRegularBenefitRecord ?benefitRecord .
+                    ?benefitRecord :regularBenefitMonthsPaid ?monthsPaid .
+                    FILTER(datatype(?monthsPaid) = xsd:integer)
+                    FILTER(?monthsPaid >= 12)
+                }
+            }
+        """ ;
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "The application must be made after exhaustion of the 12-month regular unemployment benefit and no later than two months after that exhaustion." ;
+        sh:select """
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
+            WHERE {
+                FILTER NOT EXISTS {
+                    ?this :hasRegularBenefitRecord ?benefitRecord .
+                    ?benefitRecord :regularBenefitStartDate ?benefitStartDate .
+                    ?benefitRecord :regularBenefitMonthsPaid ?monthsPaid .
+                    FILTER(datatype(?benefitStartDate) = xsd:date)
+                    FILTER(datatype(?monthsPaid) = xsd:integer)
+                    FILTER(?monthsPaid >= 12)
+                    BIND(
+                        (
+                            (YEAR(NOW()) - YEAR(?benefitStartDate)) * 12 +
+                            (MONTH(NOW()) - MONTH(?benefitStartDate))
+                        )
+                        AS ?calendarMonthDifference
+                    )
                     FILTER(
                         (
-                            ?monthDifference > 12 ||
-                            (?monthDifference = 12 && DAY(?now) >= DAY(?benefitStartDate))
+                            ?calendarMonthDifference > 12 ||
+                            (
+                                ?calendarMonthDifference = 12 &&
+                                DAY(NOW()) >= DAY(?benefitStartDate)
+                            )
                         )
                         &&
                         (
-                            ?monthDifference < 14 ||
-                            (?monthDifference = 14 && DAY(?now) <= DAY(?benefitStartDate))
+                            ?calendarMonthDifference < 14 ||
+                            (
+                                ?calendarMonthDifference = 14 &&
+                                DAY(NOW()) <= DAY(?benefitStartDate)
+                            )
                         )
                     )
                 }
             }
-        """
+        """ ;
     ] ;
 
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "Each applicant, spouse, and minor child whose income is included in the family-income calculation must have an income record for the tax year two years before the validation/application year." ;
+        sh:message "The applicant, spouse, and each minor child must have an income record for the tax year two years before the validation year." ;
         sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT DISTINCT ?this
             WHERE {
+                BIND(YEAR(NOW()) - 2 AS ?requiredIncomeYear)
                 {
-                    BIND($this AS ?familyMember)
+                    BIND(?this AS ?familyMember)
                 }
                 UNION
                 {
-                    $this :hasSpouse ?familyMember .
+                    ?this :hasSpouse ?familyMember .
                 }
                 UNION
                 {
-                    $this :hasChild ?familyMember .
+                    ?this :hasChild ?familyMember .
                     ?familyMember :birthDate ?childBirthDate .
-
-                    BIND(NOW() AS ?now)
+                    FILTER(datatype(?childBirthDate) = xsd:date)
                     BIND(
-                        YEAR(?now) - YEAR(?childBirthDate) -
+                        YEAR(NOW()) - YEAR(?childBirthDate) -
                         IF(
-                            MONTH(?now) < MONTH(?childBirthDate) ||
-                            (MONTH(?now) = MONTH(?childBirthDate) && DAY(?now) < DAY(?childBirthDate)),
+                            MONTH(NOW()) < MONTH(?childBirthDate) ||
+                            (
+                                MONTH(NOW()) = MONTH(?childBirthDate) &&
+                                DAY(NOW()) < DAY(?childBirthDate)
+                            ),
                             1,
                             0
                         )
                         AS ?childAge
                     )
-                    FILTER(?childAge < 18)
+                    FILTER(?childAge >= 0 && ?childAge < 18)
                 }
-
                 FILTER NOT EXISTS {
                     ?familyMember :hasIncome ?incomeRecord .
-                    ?incomeRecord
-                        :incomeYear ?incomeYear ;
-                        :amount ?incomeAmount .
-                    FILTER(xsd:integer(STR(?incomeYear)) = YEAR(NOW()) - 2)
+                    ?incomeRecord :incomeYear ?incomeYear .
+                    ?incomeRecord :amount ?incomeAmount .
+                    FILTER(datatype(?incomeYear) = xsd:gYear)
+                    FILTER(datatype(?incomeAmount) = xsd:decimal)
+                    FILTER(
+                        xsd:integer(STR(?incomeYear)) = ?requiredIncomeYear
+                    )
                 }
             }
-        """
+        """ ;
     ] ;
 
     sh:sparql [
         a sh:SPARQLConstraint ;
-        sh:message "The relevant annual family income must not exceed EUR 10,000 plus EUR 586.08 for each minor child." ;
+        sh:message "Annual family income for the tax year two years before the validation year must not exceed 10,000 euros plus 586.08 euros for each minor child." ;
         sh:select """
-            SELECT $this
+            PREFIX : <http://example.org/schema#>
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            SELECT ?this
             WHERE {
                 {
-                    SELECT $this
-                           (COUNT(DISTINCT ?minorChild) AS ?minorChildCount)
+                    SELECT ?this (SUM(?incomeAmount) AS ?familyIncome)
                     WHERE {
+                        {
+                            SELECT DISTINCT ?this ?incomeRecord ?incomeAmount
+                            WHERE {
+                                ?this rdf:type :Applicant .
+                                BIND(YEAR(NOW()) - 2 AS ?requiredIncomeYear)
+                                {
+                                    BIND(?this AS ?familyMember)
+                                }
+                                UNION
+                                {
+                                    ?this :hasSpouse ?familyMember .
+                                }
+                                UNION
+                                {
+                                    ?this :hasChild ?familyMember .
+                                    ?familyMember :birthDate ?childBirthDate .
+                                    FILTER(datatype(?childBirthDate) = xsd:date)
+                                    BIND(
+                                        YEAR(NOW()) - YEAR(?childBirthDate) -
+                                        IF(
+                                            MONTH(NOW()) < MONTH(?childBirthDate) ||
+                                            (
+                                                MONTH(NOW()) = MONTH(?childBirthDate) &&
+                                                DAY(NOW()) < DAY(?childBirthDate)
+                                            ),
+                                            1,
+                                            0
+                                        )
+                                        AS ?childAge
+                                    )
+                                    FILTER(?childAge >= 0 && ?childAge < 18)
+                                }
+                                ?familyMember :hasIncome ?incomeRecord .
+                                ?incomeRecord :incomeYear ?incomeYear .
+                                ?incomeRecord :amount ?rawIncomeAmount .
+                                FILTER(datatype(?incomeYear) = xsd:gYear)
+                                FILTER(datatype(?rawIncomeAmount) = xsd:decimal)
+                                FILTER(
+                                    xsd:integer(STR(?incomeYear)) =
+                                    ?requiredIncomeYear
+                                )
+                                BIND(
+                                    xsd:decimal(?rawIncomeAmount)
+                                    AS ?incomeAmount
+                                )
+                            }
+                        }
+                    }
+                    GROUP BY ?this
+                }
+                {
+                    SELECT ?this (COUNT(DISTINCT ?minorChild) AS ?minorChildCount)
+                    WHERE {
+                        ?this rdf:type :Applicant .
                         OPTIONAL {
-                            $this :hasChild ?minorChild .
+                            ?this :hasChild ?minorChild .
                             ?minorChild :birthDate ?minorChildBirthDate .
-
-                            BIND(NOW() AS ?now)
+                            FILTER(datatype(?minorChildBirthDate) = xsd:date)
                             BIND(
-                                YEAR(?now) - YEAR(?minorChildBirthDate) -
+                                YEAR(NOW()) - YEAR(?minorChildBirthDate) -
                                 IF(
-                                    MONTH(?now) < MONTH(?minorChildBirthDate) ||
-                                    (MONTH(?now) = MONTH(?minorChildBirthDate) && DAY(?now) < DAY(?minorChildBirthDate)),
+                                    MONTH(NOW()) < MONTH(?minorChildBirthDate) ||
+                                    (
+                                        MONTH(NOW()) =
+                                            MONTH(?minorChildBirthDate) &&
+                                        DAY(NOW()) <
+                                            DAY(?minorChildBirthDate)
+                                    ),
                                     1,
                                     0
                                 )
                                 AS ?minorChildAge
                             )
-                            FILTER(?minorChildAge < 18)
-                        }
-                    }
-                    GROUP BY $this
-                }
-
-                {
-                    SELECT $this
-                           (SUM(?incomeAmount) AS ?familyIncome)
-                    WHERE {
-                        {
-                            BIND($this AS ?familyMember)
-                        }
-                        UNION
-                        {
-                            $this :hasSpouse ?familyMember .
-                        }
-                        UNION
-                        {
-                            $this :hasChild ?familyMember .
-                            ?familyMember :birthDate ?childBirthDate .
-
-                            BIND(NOW() AS ?now)
-                            BIND(
-                                YEAR(?now) - YEAR(?childBirthDate) -
-                                IF(
-                                    MONTH(?now) < MONTH(?childBirthDate) ||
-                                    (MONTH(?now) = MONTH(?childBirthDate) && DAY(?now) < DAY(?childBirthDate)),
-                                    1,
-                                    0
-                                )
-                                AS ?childAge
+                            FILTER(
+                                ?minorChildAge >= 0 &&
+                                ?minorChildAge < 18
                             )
-                            FILTER(?childAge < 18)
                         }
-
-                        ?familyMember :hasIncome ?incomeRecord .
-                        ?incomeRecord
-                            :incomeYear ?incomeYear ;
-                            :amount ?incomeAmount .
-
-                        FILTER(xsd:integer(STR(?incomeYear)) = YEAR(NOW()) - 2)
                     }
-                    GROUP BY $this
+                    GROUP BY ?this
                 }
-
                 BIND(
-                    xsd:decimal("10000.00") +
-                    (xsd:decimal(?minorChildCount) * xsd:decimal("586.08"))
-                    AS ?incomeLimit
+                    10000.00 +
+                    (586.08 * xsd:decimal(?minorChildCount))
+                    AS ?maximumPermittedIncome
                 )
-
-                FILTER(?familyIncome > ?incomeLimit)
+                FILTER(?familyIncome > ?maximumPermittedIncome)
             }
-        """
+        """ ;
     ] .
