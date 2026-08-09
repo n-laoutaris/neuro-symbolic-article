@@ -240,7 +240,7 @@ def shacl_generator_node(state: AgentState):
     # Reminder: state messages only carry the conversation history after the system prompt and human context. So we append them at the end of the conversation start.
     
     # Escalation logic based on attempt count
-    if attempt_count == 3:
+    if attempt_count == 3 or attempt_count == 4:
         message = "⚠️ Escalating. Terra (high thinking mode) activated."
         print(message)
         append_run_log(message, state['file_name'])
@@ -249,7 +249,7 @@ def shacl_generator_node(state: AgentState):
             temperature = 0,
             reasoning_effort = "high", 
             max_retries = 2)
-    elif attempt_count == 5:
+    elif attempt_count == 5 or attempt_count == 6:
         message = "⚠️ Escalating. Sol (medium thinking mode) activated."
         print(message)
         append_run_log(message, state['file_name'])
